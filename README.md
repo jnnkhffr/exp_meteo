@@ -20,3 +20,5 @@ Clone this repository:
    ```bash
    git clone https://github.com/jnnkhffr/exp_meteo
    ```
+### Install dependencies:
+pip install -r requirements.txt
