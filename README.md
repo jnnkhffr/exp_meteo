@@ -1,6 +1,8 @@
 # Experimental_Meteorology
 Repo for the module experimental meteorology
 
+#### _Don't commit and push unversioned files!!!_
+
 __General Structure__:\
 The repository should consist of two folders: one for reading in data and the other for analyzing it. 
 The respective programs will be located in these folders, and when we need to analyze the data, we’ll simply call the 
