@@ -3,10 +3,10 @@
 from pathlib import Path
 import pandas as pd
 
-#folder = Path("C:/Users/janni/Desktop/Studium/Master/Experimental Meteo/sample_data/SLS20")
+# folder = Path("C:/Users/janni/Desktop/Studium/Master/Experimental Meteo/sample_data/SLS20")
 
-#for file in folder.iterdir():
-    # Skip hidden/system files
+# for file in folder.iterdir():
+# Skip hidden/system files
 #    if file.name.startswith("."):
 #        print(f"Skipping hidden file: {file.name}")
 #        continue
@@ -61,7 +61,9 @@ def load_sls20_data(folder_path: str):
 
 
 if __name__ == "__main__":
-    folder = "C:/Users/janni/Desktop/Studium/Master/Experimental Meteo/sample_data/SLS20"
+    folder = (
+        "C:/Users/janni/Desktop/Studium/Master/Experimental Meteo/sample_data/SLS20"
+    )
     dgn, res = load_sls20_data(folder)
 
     print("\nLoaded DGN files:", list(dgn.keys()))

@@ -12,20 +12,19 @@ The analysis is designed for BLS900 scintillometer data but can also be applied
 to other scintillometer datasets with equivalent variables.
 """
 
-
 from pathlib import Path
 from typing import Dict
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-#At the moment only with BLS900 Data
+
+# At the moment only with BLS900 Data
 from scintillometer.data_import.import_bls900 import load_bls900_data
 
 # Folder where all figures and tables will be stored
 PLOT_FOLDER = Path(
-    r"C:\Users\janni\PycharmProjects\exp_meteo\scintillometer\plots"
-    r"\land_water"
+    r"C:\Users\janni\PycharmProjects\exp_meteo\scintillometer\plots" r"\land_water"
 )
 
 # Create folder automatically if it does not exist
@@ -45,9 +44,7 @@ plt.rcParams.update(
 
 
 # Data preparation functions
-def combine_daily_files(
-    daily_data: Dict[str, pd.DataFrame]
-) -> pd.DataFrame:
+def combine_daily_files(daily_data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     """
     Combine multiple daily scintillometer files into one dataframe.
 
@@ -66,19 +63,12 @@ def combine_daily_files(
     if not daily_data:
         raise ValueError("No measurement data provided.")
 
-    df = pd.concat(
-        daily_data.values(),
-        ignore_index=True
-    )
+    df = pd.concat(daily_data.values(), ignore_index=True)
 
     return df
 
 
-
-def prepare_dataframe(
-    df: pd.DataFrame,
-    remove_errors: bool = True
-) -> pd.DataFrame:
+def prepare_dataframe(df: pd.DataFrame, remove_errors: bool = True) -> pd.DataFrame:
     """
     Prepare scintillometer data for diurnal cycle analysis.
 
@@ -103,73 +93,38 @@ def prepare_dataframe(
 
     df = df.copy()
 
-
     # Ensure timestamp format
-    df["timestamp"] = pd.to_datetime(
-        df["timestamp"]
-    )
-
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
 
     # Quality control
     if remove_errors:
 
         if "error" in df.columns:
-            df = df[
-                df["error"] == 0
-            ]
+            df = df[df["error"] == 0]
 
         if "channelFlagsCombined" in df.columns:
-            df = df[
-                df["channelFlagsCombined"] == 0
-            ]
-
+            df = df[df["channelFlagsCombined"] == 0]
 
     # Remove missing values from important variables
-    required_columns = [
-        "Cn2",
-        "CT2",
-        "crosswind",
-        "temperature",
-        "humidity"
-    ]
+    required_columns = ["Cn2", "CT2", "crosswind", "temperature", "humidity"]
 
-    existing_columns = [
-        col for col in required_columns
-        if col in df.columns
-    ]
+    existing_columns = [col for col in required_columns if col in df.columns]
 
-    df = df.dropna(
-        subset=existing_columns
-    )
-
+    df = df.dropna(subset=existing_columns)
 
     # Create time variables
-    df["hour"] = (
-        df["timestamp"]
-        .dt.hour
-    )
+    df["hour"] = df["timestamp"].dt.hour
 
-    df["minute"] = (
-        df["timestamp"]
-        .dt.minute
-    )
-
+    df["minute"] = df["timestamp"].dt.minute
 
     # Decimal hour allows smoother diurnal plots
-    df["decimal_hour"] = (
-        df["hour"]
-        +
-        df["minute"] / 60
-    )
-
+    df["decimal_hour"] = df["hour"] + df["minute"] / 60
 
     return df
 
 
-
 def calculate_diurnal_cycle(
-    df: pd.DataFrame,
-    averaging_interval: float = 0.5
+    df: pd.DataFrame, averaging_interval: float = 0.5
 ) -> pd.DataFrame:
     """
     Calculate the mean diurnal cycle.
@@ -197,55 +152,28 @@ def calculate_diurnal_cycle(
 
     df = df.copy()
 
-
     # Create time bins
     df["time_bin"] = (
-        np.floor(
-            df["decimal_hour"]
-            /
-            averaging_interval
-        )
-        *
-        averaging_interval
+        np.floor(df["decimal_hour"] / averaging_interval) * averaging_interval
     )
 
+    mean_cycle = df.groupby("time_bin").mean(numeric_only=True)
 
-    mean_cycle = (
-        df
-        .groupby("time_bin")
-        .mean(numeric_only=True)
-    )
-
-
-    std_cycle = (
-        df
-        .groupby("time_bin")
-        .std(numeric_only=True)
-    )
-
+    std_cycle = df.groupby("time_bin").std(numeric_only=True)
 
     # Add standard deviation columns
 
     for column in std_cycle.columns:
 
-        mean_cycle[
-            f"{column}_std"
-        ] = std_cycle[column]
+        mean_cycle[f"{column}_std"] = std_cycle[column]
 
-
-    mean_cycle = (
-        mean_cycle
-        .reset_index()
-    )
-
+    mean_cycle = mean_cycle.reset_index()
 
     return mean_cycle
 
 
 # Plotting functions
-def save_figure(
-    filename: str
-) -> None:
+def save_figure(filename: str) -> None:
     """
     Save the current matplotlib figure.
 
@@ -257,14 +185,9 @@ def save_figure(
 
     output_path = PLOT_FOLDER / filename
 
-    plt.savefig(
-        output_path,
-        dpi=300,
-        bbox_inches="tight"
-    )
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
 
     plt.close()
-
 
 
 def plot_diurnal_variable(
@@ -273,7 +196,7 @@ def plot_diurnal_variable(
     ylabel: str,
     title: str,
     filename: str,
-    show_std: bool = True
+    show_std: bool = True,
 ) -> None:
     """
     Create a diurnal cycle plot for one variable.
@@ -303,29 +226,17 @@ def plot_diurnal_variable(
     """
 
     if variable not in cycle.columns:
-        print(
-            f"Warning: {variable} not available. Skipping plot."
-        )
+        print(f"Warning: {variable} not available. Skipping plot.")
         return
-
 
     x = cycle["time_bin"]
 
     y = cycle[variable]
 
-
     plt.figure()
 
-
     # Main line
-    plt.plot(
-        x,
-        y,
-        marker="o",
-        linewidth=2,
-        label="Mean"
-    )
-
+    plt.plot(x, y, marker="o", linewidth=2, label="Mean")
 
     # Standard deviation envelope
 
@@ -335,54 +246,27 @@ def plot_diurnal_variable(
 
         std = cycle[std_column]
 
-        plt.fill_between(
-            x,
-            y - std,
-            y + std,
-            alpha=0.25,
-            label="±1 standard deviation"
-        )
+        plt.fill_between(x, y - std, y + std, alpha=0.25, label="±1 standard deviation")
 
+    plt.xlabel("Local time (hours)")
 
-    plt.xlabel(
-        "Local time (hours)"
-    )
+    plt.ylabel(ylabel)
 
-    plt.ylabel(
-        ylabel
-    )
+    plt.title(title)
 
+    plt.xlim(0, 24)
 
-    plt.title(
-        title
-    )
-
-
-    plt.xlim(
-        0,
-        24
-    )
-
-
-    plt.xticks(
-        range(0, 25, 3)
-    )
-
+    plt.xticks(range(0, 25, 3))
 
     plt.legend()
 
     plt.tight_layout()
 
-
-    save_figure(
-        filename
-    )
+    save_figure(filename)
 
 
 # Individual research plots
-def plot_cn2(
-    cycle: pd.DataFrame
-) -> None:
+def plot_cn2(cycle: pd.DataFrame) -> None:
     """
     Plot the diurnal cycle of the refractive index
     structure parameter Cn2.
@@ -395,14 +279,11 @@ def plot_cn2(
         variable="Cn2",
         ylabel=r"$C_n^2$ [$m^{-2/3}$]",
         title="Mean Diurnal Cycle of Turbulence ($C_n^2$)",
-        filename="cn2_diurnal_cycle.png"
+        filename="cn2_diurnal_cycle.png",
     )
 
 
-
-def plot_ct2(
-    cycle: pd.DataFrame
-) -> None:
+def plot_ct2(cycle: pd.DataFrame) -> None:
     """
     Plot the diurnal cycle of the temperature
     structure parameter CT2.
@@ -415,14 +296,11 @@ def plot_ct2(
         variable="CT2",
         ylabel=r"$C_T^2$ [$K^2 m^{-2/3}$]",
         title="Mean Diurnal Cycle of Temperature Turbulence ($C_T^2$)",
-        filename="ct2_diurnal_cycle.png"
+        filename="ct2_diurnal_cycle.png",
     )
 
 
-
-def plot_crosswind(
-    cycle: pd.DataFrame
-) -> None:
+def plot_crosswind(cycle: pd.DataFrame) -> None:
     """
     Plot the diurnal variation of crosswind.
 
@@ -435,14 +313,11 @@ def plot_crosswind(
         variable="crosswind",
         ylabel="Crosswind [m s$^{-1}$]",
         title="Mean Diurnal Cycle of Crosswind",
-        filename="crosswind_diurnal_cycle.png"
+        filename="crosswind_diurnal_cycle.png",
     )
 
 
-
-def plot_temperature(
-    cycle: pd.DataFrame
-) -> None:
+def plot_temperature(cycle: pd.DataFrame) -> None:
     """
     Plot the diurnal variation of air temperature.
     """
@@ -452,14 +327,11 @@ def plot_temperature(
         variable="temperature",
         ylabel="Temperature [°C]",
         title="Mean Diurnal Cycle of Air Temperature",
-        filename="temperature_diurnal_cycle.png"
+        filename="temperature_diurnal_cycle.png",
     )
 
 
-
-def plot_humidity(
-    cycle: pd.DataFrame
-) -> None:
+def plot_humidity(cycle: pd.DataFrame) -> None:
     """
     Plot the diurnal variation of relative humidity.
     """
@@ -469,14 +341,12 @@ def plot_humidity(
         variable="humidity",
         ylabel="Relative Humidity [%]",
         title="Mean Diurnal Cycle of Relative Humidity",
-        filename="humidity_diurnal_cycle.png"
+        filename="humidity_diurnal_cycle.png",
     )
 
 
 # Statistical analysis and workflow
-def save_summary_statistics(
-    df: pd.DataFrame
-) -> None:
+def save_summary_statistics(df: pd.DataFrame) -> None:
     """
     Save descriptive statistics of turbulence-related variables.
 
@@ -489,43 +359,18 @@ def save_summary_statistics(
         Prepared measurement dataframe.
     """
 
-    variables = [
-        "Cn2",
-        "CT2",
-        "crosswind",
-        "temperature",
-        "humidity"
-    ]
+    variables = ["Cn2", "CT2", "crosswind", "temperature", "humidity"]
+
+    available_variables = [var for var in variables if var in df.columns]
+
+    statistics = df[available_variables].describe().transpose()
+
+    output_path = PLOT_FOLDER / "summary_statistics.csv"
+
+    statistics.to_csv(output_path)
 
 
-    available_variables = [
-        var for var in variables
-        if var in df.columns
-    ]
-
-
-    statistics = (
-        df[available_variables]
-        .describe()
-        .transpose()
-    )
-
-
-    output_path = (
-        PLOT_FOLDER /
-        "summary_statistics.csv"
-    )
-
-
-    statistics.to_csv(
-        output_path
-    )
-
-
-
-def run_analysis(
-    mnd_data: dict
-) -> pd.DataFrame:
+def run_analysis(mnd_data: dict) -> pd.DataFrame:
     """
     Run the complete land-water turbulence analysis.
 
@@ -548,97 +393,51 @@ def run_analysis(
         Calculated diurnal cycle dataframe.
     """
 
+    print("Combining daily measurements...")
 
-    print(
-        "Combining daily measurements..."
-    )
+    df = combine_daily_files(mnd_data)
 
-    df = combine_daily_files(
-        mnd_data
-    )
+    print(f"Total measurements: {len(df)}")
 
+    print("Preparing dataframe...")
 
-    print(
-        f"Total measurements: {len(df)}"
-    )
-
-
-    print(
-        "Preparing dataframe..."
-    )
-
-    df = prepare_dataframe(
-        df
-    )
+    df = prepare_dataframe(df)
     print("\n===== DATA TYPES =====")
     print(df.dtypes)
 
+    print(f"Valid measurements after filtering: {len(df)}")
 
-    print(
-        f"Valid measurements after filtering: {len(df)}"
-    )
+    print("Calculating diurnal cycle...")
 
+    cycle = calculate_diurnal_cycle(df)
 
-    print(
-        "Calculating diurnal cycle..."
-    )
+    print("Saving statistical summary...")
 
-    cycle = calculate_diurnal_cycle(
-        df
-    )
+    save_summary_statistics(df)
 
-
-    print(
-        "Saving statistical summary..."
-    )
-
-    save_summary_statistics(
-        df
-    )
-
-
-    print(
-        "Creating plots..."
-    )
-
+    print("Creating plots...")
 
     # Turbulence-related quantities
 
-    plot_cn2(
-        cycle
-    )
+    plot_cn2(cycle)
 
-    plot_ct2(
-        cycle
-    )
+    plot_ct2(cycle)
 
-    plot_crosswind(
-        cycle
-    )
-
+    plot_crosswind(cycle)
 
     # Meteorological variables
 
-    plot_temperature(
-        cycle
-    )
+    plot_temperature(cycle)
 
-    plot_humidity(
-        cycle
-    )
+    plot_humidity(cycle)
 
-
-    print(
-        "Analysis completed."
-    )
+    print("Analysis completed.")
     print(df["Cn2"].describe())
     print(df["CT2"].describe())
     print(df["crosswind"].describe())
     print(df["H_convection"].describe())
 
-
     return cycle
-
 
 
 # Example execution
@@ -659,34 +458,19 @@ if __name__ == "__main__":
 
     """
 
-
     DATA_FOLDER = (
         r"C:\Users\janni\Desktop\Studium\Master"
         r"\Experimental Meteo\sample_data\BLS900"
     )
 
+    print("Loading BLS900 data...")
 
-    print(
-        "Loading BLS900 data..."
-    )
-
-
-    dgn, mnd = load_bls900_data(
-        DATA_FOLDER
-    )
-
+    dgn, mnd = load_bls900_data(DATA_FOLDER)
 
     # Run analysis
 
-    diurnal_cycle = run_analysis(
-        mnd
-    )
+    diurnal_cycle = run_analysis(mnd)
 
+    print("\nResulting diurnal cycle:")
 
-    print(
-        "\nResulting diurnal cycle:"
-    )
-
-    print(
-        diurnal_cycle.head()
-    )
+    print(diurnal_cycle.head())

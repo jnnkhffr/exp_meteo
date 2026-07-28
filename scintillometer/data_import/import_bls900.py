@@ -23,13 +23,7 @@ def read_dgn_file(file):
 
     start = find_data_start(lines)
 
-    df = pd.read_csv(
-        file,
-        sep=r"\t",
-        header=None,
-        skiprows=start,
-        engine="python"
-    )
+    df = pd.read_csv(file, sep=r"\t", header=None, skiprows=start, engine="python")
 
     df.columns = [
         "time",
@@ -83,21 +77,18 @@ def read_dgn_file(file):
         "channelFlagsYA",
         "channelFlagsXB",
         "channelFlagsYB",
-        "error"
+        "error",
     ]
 
     # Split time column
-    df[["averagingPeriod", "timestamp"]] = (
-        df["time"].str.split("/", expand=True)
-    )
+    df[["averagingPeriod", "timestamp"]] = df["time"].str.split("/", expand=True)
 
     df["timestamp"] = pd.to_datetime(df["timestamp"])
 
     df.drop(columns="time", inplace=True)
 
     cols = ["timestamp", "averagingPeriod"] + [
-        c for c in df.columns
-        if c not in ["timestamp", "averagingPeriod"]
+        c for c in df.columns if c not in ["timestamp", "averagingPeriod"]
     ]
     df = df[cols]
 
@@ -112,13 +103,7 @@ def read_mnd_file(file):
 
     start = find_data_start(lines)
 
-    df = pd.read_csv(
-        file,
-        sep=r"\t",
-        header=None,
-        skiprows=start,
-        engine="python"
-    )
+    df = pd.read_csv(file, sep=r"\t", header=None, skiprows=start, engine="python")
 
     df.columns = [
         "time",
@@ -144,21 +129,18 @@ def read_mnd_file(file):
         "numDgnValidCrosswind",
         "numDgnTotal",
         "channelFlagsCombined",
-        "error"
+        "error",
     ]
 
     # Split time column
-    df[["averagingPeriod", "timestamp"]] = (
-        df["time"].str.split("/", expand=True)
-    )
+    df[["averagingPeriod", "timestamp"]] = df["time"].str.split("/", expand=True)
 
     df["timestamp"] = pd.to_datetime(df["timestamp"])
 
     df.drop(columns="time", inplace=True)
 
     cols = ["timestamp", "averagingPeriod"] + [
-        c for c in df.columns
-        if c not in ["timestamp", "averagingPeriod"]
+        c for c in df.columns if c not in ["timestamp", "averagingPeriod"]
     ]
     df = df[cols]
 
@@ -186,16 +168,12 @@ def read_mnd_file(file):
         "numDgnValidCrosswind",
         "numDgnTotal",
         "channelFlagsCombined",
-        "error"
+        "error",
     ]
-
 
     for column in numeric_columns:
         if column in df.columns:
-            df[column] = pd.to_numeric(
-                df[column],
-                errors="coerce"
-            )
+            df[column] = pd.to_numeric(df[column], errors="coerce")
 
     return df
 
@@ -243,7 +221,9 @@ def load_bls900_data(folder_path):
 
 if __name__ == "__main__":
 
-    folder = r"C:\Users\janni\Desktop\Studium\Master\Experimental Meteo\sample_data\BLS900"
+    folder = (
+        r"C:\Users\janni\Desktop\Studium\Master\Experimental Meteo\sample_data\BLS900"
+    )
 
     dgn, mnd = load_bls900_data(folder)
 
