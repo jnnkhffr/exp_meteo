@@ -19,6 +19,7 @@ from typing import Dict
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+#At the moment only with BLS900 Data
 from scintillometer.data_import.import_bls900 import load_bls900_data
 
 # Folder where all figures and tables will be stored
