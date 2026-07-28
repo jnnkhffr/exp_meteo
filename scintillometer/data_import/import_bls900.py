@@ -162,6 +162,41 @@ def read_mnd_file(file):
     ]
     df = df[cols]
 
+    # Convert measurement columns to numeric values
+    numeric_columns = [
+        "Cn2",
+        "CT2",
+        "H_convection",
+        "crosswind",
+        "sigCrosswind",
+        "pressure",
+        "temperature",
+        "humidity",
+        "pathLength",
+        "pathHeight",
+        "correctCn2EO",
+        "correctCn2Sat",
+        "mndCounter",
+        "XA_mean_corrected",
+        "YA_mean_corrected",
+        "nSigXA",
+        "nSigYA",
+        "corXAYA_corrected",
+        "numDgnValid",
+        "numDgnValidCrosswind",
+        "numDgnTotal",
+        "channelFlagsCombined",
+        "error"
+    ]
+
+
+    for column in numeric_columns:
+        if column in df.columns:
+            df[column] = pd.to_numeric(
+                df[column],
+                errors="coerce"
+            )
+
     return df
 
 
