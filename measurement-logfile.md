@@ -18,6 +18,8 @@ Are the WXT values being recorded?
 
 # 12th Aug
 ## BLS 2000
+### 5:24 - 8:45
+- No signal! Most likely cause: transmitter power supply, i.e. batteries depleted; recharged in the morning by the solar panels.
 ### 9:30
 - Stopped measurement
 ### 9:31
