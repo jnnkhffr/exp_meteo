@@ -4,6 +4,7 @@ import matplotlib
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import pandas as pd
 
 from scintillometer.data_import.import_sls200 import load_sls20_data
@@ -49,7 +50,7 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
         "timestamp"
     )
 
-    # Plot all days
+    # ALL DAYS
     fig, ax = plt.subplots(
         figsize=(14, 6)
     )
@@ -75,7 +76,7 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
     )
 
     ax.set_xlabel(
-        "Date and time"
+        "Date"
     )
 
     ax.set_ylabel(
@@ -88,6 +89,17 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
     )
 
     ax.legend()
+
+    # X-axis: dd.mm.yyyy HH:MM
+    ax.xaxis.set_major_formatter(
+        mdates.DateFormatter("%d.%m.%Y %H:%M")
+    )
+
+    ax.xaxis.set_major_locator(
+        mdates.HourLocator(
+            byhour=[0, 6, 12, 18]
+        )
+    )
 
     fig.autofmt_xdate()
 
@@ -110,7 +122,7 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
         f"Saved: {output}"
     )
 
-    # Individual days
+    # INDIVIDUAL DAYS
     res["date"] = res["timestamp"].dt.date
 
     for date, day_data in res.groupby("date"):
@@ -136,7 +148,7 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
         )
 
         date_string = pd.Timestamp(date).strftime(
-            "%Y-%m-%d"
+            "%d.%m.%Y"
         )
 
         ax.set_title(
@@ -157,6 +169,15 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
         )
 
         ax.legend()
+
+        # X-axis: time only for individual days
+        ax.xaxis.set_major_formatter(
+            mdates.DateFormatter("%H:%M")
+        )
+
+        ax.xaxis.set_major_locator(
+            mdates.HourLocator(interval=2)
+        )
 
         fig.autofmt_xdate()
 
@@ -182,9 +203,7 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
 
 def main():
 
-    print("=" * 80)
     print("SLS20 SENSIBLE HEAT FLUX PLOTS")
-    print("=" * 80)
 
     print(
         f"Data folder:  {DATA_FOLDER}"
