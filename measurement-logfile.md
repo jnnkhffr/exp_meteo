@@ -41,4 +41,11 @@ Are the WXT values being recorded?
 
 - Short bursts of low data availability (0-20%) during the night, reasons unknown.
 - Data availability is almost always at 80-100%.
+### 11:55 - 12:05
+- Stability is being recorded inaccurately: stable by 1°C at 11:30 during clear sky conditions (2m temp is 1K above 30cm temp).
+- Likely reason: 30cm thermometer is in shadow, 2m thermometer is in the sun. Even the ventilation is not strong enough to correct this difference.
+- Solution: Moved temperature sensors (30cm and 2m) from close to the fence to free standing next to SLS 20 receiver.
+### 12:05
+- Temperature stratification is being recorded as expected. Both thermometers are in the sun.
 
+Check if both thermometers come into the building's shadow at the same time at around 12:50 CEST.
