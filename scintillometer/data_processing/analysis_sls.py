@@ -18,6 +18,53 @@ PLOT_FOLDER = Path(
 )
 
 
+def format_time_axis(ax):
+    """
+    Format the x-axis with time labels every 6 hours.
+    """
+
+    ax.xaxis.set_major_locator(
+        mdates.HourLocator(
+            byhour=[0, 6, 12, 18]
+        )
+    )
+
+    ax.xaxis.set_major_formatter(
+        mdates.DateFormatter("%H:%M")
+    )
+
+    ax.set_xlabel(
+        "Time"
+    )
+
+
+def add_day_labels(ax, dates):
+    """
+    Add one date label centered underneath each day.
+
+    The normal x-axis only contains the time.
+    The date is displayed separately below the axis.
+    """
+
+    for date in dates:
+
+        start = pd.Timestamp(date)
+
+        center = start + pd.Timedelta(
+            hours=12
+        )
+
+        ax.text(
+            center,
+            -0.13,
+            start.strftime("%d.%m.%Y"),
+            transform=ax.get_xaxis_transform(),
+            ha="center",
+            va="top",
+            fontsize=10,
+        )
+
+
 def plot_heat_flux(res: pd.DataFrame) -> None:
 
     PLOT_FOLDER.mkdir(
@@ -25,7 +72,10 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
         exist_ok=True,
     )
 
-    # Check
+    # ========================================================================
+    # CHECK REQUIRED COLUMNS
+    # ========================================================================
+
     required_columns = {
         "timestamp",
         "Heat_day",
@@ -39,7 +89,10 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
             f"Missing RES columns: {sorted(missing)}"
         )
 
-    # Prepare timestamps
+    # ========================================================================
+    # PREPARE DATA
+    # ========================================================================
+
     res = res.copy()
 
     res["timestamp"] = pd.to_datetime(
@@ -50,7 +103,10 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
         "timestamp"
     )
 
+    # ========================================================================
     # ALL DAYS
+    # ========================================================================
+
     fig, ax = plt.subplots(
         figsize=(14, 6)
     )
@@ -75,12 +131,8 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
         "SLS20 – Sensible Heat Flux"
     )
 
-    ax.set_xlabel(
-        "Date"
-    )
-
     ax.set_ylabel(
-        "Sensible heat flux"
+        "Sensible heat flux [$W/m^2$]"
     )
 
     ax.grid(
@@ -90,18 +142,29 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
 
     ax.legend()
 
-    # X-axis: dd.mm.yyyy HH:MM
-    ax.xaxis.set_major_formatter(
-        mdates.DateFormatter("%d.%m.%Y %H:%M")
+    # ------------------------------------------------------------------------
+    # X-AXIS: ONLY TIME
+    # ------------------------------------------------------------------------
+
+    format_time_axis(ax)
+
+    # ------------------------------------------------------------------------
+    # DATE LABELS: ONE DATE PER DAY, CENTERED
+    # ------------------------------------------------------------------------
+
+    dates = sorted(
+        res["timestamp"].dt.date.unique()
     )
 
-    ax.xaxis.set_major_locator(
-        mdates.HourLocator(
-            byhour=[0, 6, 12, 18]
-        )
+    add_day_labels(
+        ax,
+        dates,
     )
 
-    fig.autofmt_xdate()
+    # Extra space below the axis for the dates
+    fig.subplots_adjust(
+        bottom=0.20
+    )
 
     fig.tight_layout()
 
@@ -122,10 +185,17 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
         f"Saved: {output}"
     )
 
+    # ========================================================================
     # INDIVIDUAL DAYS
-    res["date"] = res["timestamp"].dt.date
+    # ========================================================================
 
-    for date, day_data in res.groupby("date"):
+    res["date"] = res[
+        "timestamp"
+    ].dt.date
+
+    for date, day_data in res.groupby(
+        "date"
+    ):
 
         fig, ax = plt.subplots(
             figsize=(14, 6)
@@ -147,7 +217,9 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
             linewidth=1.2,
         )
 
-        date_string = pd.Timestamp(date).strftime(
+        date_string = pd.Timestamp(
+            date
+        ).strftime(
             "%d.%m.%Y"
         )
 
@@ -155,12 +227,8 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
             f"{date_string} – SLS20 – Sensible Heat Flux"
         )
 
-        ax.set_xlabel(
-            "Time"
-        )
-
         ax.set_ylabel(
-            "Sensible heat flux"
+            "Sensible heat flux [$W/m^2$]"
         )
 
         ax.grid(
@@ -170,14 +238,11 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
 
         ax.legend()
 
-        # X-axis: time only for individual days
-        ax.xaxis.set_major_formatter(
-            mdates.DateFormatter("%H:%M")
-        )
+        # --------------------------------------------------------------------
+        # X-AXIS: ONLY TIME
+        # --------------------------------------------------------------------
 
-        ax.xaxis.set_major_locator(
-            mdates.HourLocator(interval=2)
-        )
+        format_time_axis(ax)
 
         fig.autofmt_xdate()
 
@@ -203,7 +268,9 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
 
 def main():
 
-    print("SLS20 SENSIBLE HEAT FLUX PLOTS")
+    print(
+        "SLS20 SENSIBLE HEAT FLUX PLOTS"
+    )
 
     print(
         f"Data folder:  {DATA_FOLDER}"
@@ -214,7 +281,9 @@ def main():
     )
 
     print()
-    print("Loading SLS20 data...")
+    print(
+        "Loading SLS20 data..."
+    )
 
     res, dgn = load_sls20_data(
         DATA_FOLDER
@@ -230,13 +299,22 @@ def main():
     )
 
     print()
-    print("RES columns:")
-    print(list(res.columns))
+    print(
+        "RES columns:"
+    )
 
-    plot_heat_flux(res)
+    print(
+        list(res.columns)
+    )
+
+    plot_heat_flux(
+        res
+    )
 
     print()
-    print("Done.")
+    print(
+        "Done."
+    )
 
 
 if __name__ == "__main__":
