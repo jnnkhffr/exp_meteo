@@ -49,3 +49,4 @@ Are the WXT values being recorded?
 - Temperature stratification is being recorded as expected. Both thermometers are in the sun.
 
 Check if both thermometers come into the building's shadow at the same time at around 12:50 CEST.
+-> they do
