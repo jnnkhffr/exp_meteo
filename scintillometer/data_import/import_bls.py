@@ -1187,7 +1187,7 @@ if __name__ == "__main__":
     print()
     print("Done.")
 
-    from scintillometer.data_processing.analysis import run_analysis_from_import
+    from scintillometer.data_processing.analysis_bls import run_analysis_from_import
 
     # dgn und mnd wurden hier bereits erzeugt
     run_analysis_from_import(dgn, mnd)
