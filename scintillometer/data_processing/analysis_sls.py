@@ -9,7 +9,6 @@ import pandas as pd
 
 from scintillometer.data_import.import_sls200 import load_sls20_data
 
-
 DATA_FOLDER = Path(r"X:\SLS20")
 
 PLOT_FOLDER = Path(
@@ -18,19 +17,98 @@ PLOT_FOLDER = Path(
 )
 
 
+# SETTINGS FOR DAY/NIGHT TRANSITION
+
+# Morning transition:
+# Search for the point where Heat_day and Heat_night are closest
+# within this time window.
+MORNING_SEARCH_START = 6
+MORNING_SEARCH_END = 7
+
+# Evening transition:
+# Search for the point where Heat_day and Heat_night are closest
+# within this time window.
+EVENING_SEARCH_START = 18
+EVENING_SEARCH_END = 19
+
+
+# ============================================================================
+# OPTIONAL HARDCODED TRANSITIONS
+# ============================================================================
+
+# If the automatic detection gives a bad result for a specific day,
+# you can define the transition times manually here.
+#
+# Format:
+#
+# "DD.MM.YYYY": {
+#     "morning": "06:00",
+#     "evening": "18:00",
+# }
+#
+# Only days that need correction have to be entered.
+#
+HARDCODED_TRANSITIONS = {
+    # "01.08.2026": {
+    #     "morning": "06:00",
+    #     "evening": "18:00",
+    # },
+}
+
+def prepare_sls20_timestamps(
+    res: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Prepare SLS20 timestamps for plotting.
+
+    The timestamps represent local wall-clock time.
+    Any timezone information is therefore removed WITHOUT
+    converting the clock time.
+
+    Example:
+        2026-08-13 18:29:00+01:00
+    becomes:
+        2026-08-13 18:29:00
+
+    The clock time itself is not changed.
+    """
+
+    res = res.copy()
+
+    res["timestamp"] = pd.to_datetime(
+        res["timestamp"]
+    )
+
+    # Remove timezone information while preserving
+    # the displayed local clock time.
+    if isinstance(
+        res["timestamp"].dtype,
+        pd.DatetimeTZDtype,
+    ):
+        res["timestamp"] = (
+            res["timestamp"]
+            .dt.tz_localize(None)
+        )
+
+    return res
+
+
 def format_time_axis(ax):
     """
-    Format the x-axis with time labels every 6 hours.
+    Format the x-axis using the local wall-clock timestamps
+    contained in the SLS20 data.
     """
 
     ax.xaxis.set_major_locator(
         mdates.HourLocator(
-            byhour=[0, 6, 12, 18]
+            byhour=[0, 6, 12, 18],
         )
     )
 
     ax.xaxis.set_major_formatter(
-        mdates.DateFormatter("%H:%M")
+        mdates.DateFormatter(
+            "%H:%M",
+        )
     )
 
     ax.set_xlabel(
@@ -65,17 +143,346 @@ def add_day_labels(ax, dates):
         )
 
 
-def plot_heat_flux(res: pd.DataFrame) -> None:
+# NEW: FIND TRANSITION POINTS
+def find_transition_point(
+    day_data: pd.DataFrame,
+    start_hour: int,
+    end_hour: int,
+):
+    """
+    Find the timestamp where Heat_day and Heat_night are closest.
+
+    Only rows where both Heat_day and Heat_night contain valid
+    numerical values are considered.
+
+    Returns
+    -------
+    pd.Timestamp or None
+        Timestamp of the transition.
+    """
+
+    mask = (
+        (day_data["timestamp"].dt.hour >= start_hour)
+        & (day_data["timestamp"].dt.hour <= end_hour)
+    )
+
+    window = day_data.loc[
+        mask,
+        [
+            "timestamp",
+            "Heat_day",
+            "Heat_night",
+        ],
+    ].copy()
+
+    # Remove rows where one of the two curves is NaN
+    window = window.dropna(
+        subset=[
+            "Heat_day",
+            "Heat_night",
+        ]
+    )
+
+    if window.empty:
+        return None
+
+    # Absolute difference between day and night curve
+    window["difference"] = (
+        window["Heat_day"]
+        - window["Heat_night"]
+    ).abs()
+
+    window = window.dropna(
+        subset=["difference"]
+    )
+
+    if window.empty:
+        return None
+
+    idx = window["difference"].idxmin()
+
+    return window.loc[
+        idx,
+        "timestamp",
+    ]
+
+
+def get_transition_times(
+    day_data: pd.DataFrame,
+    date,
+):
+    """
+    Determine morning and evening transition times.
+
+    First checks for manually specified transition times.
+    Otherwise the transition is determined automatically.
+    """
+
+    date_string = pd.Timestamp(
+        date
+    ).strftime(
+        "%d.%m.%Y"
+    )
+
+    # HARDCODED TRANSITION
+    if date_string in HARDCODED_TRANSITIONS:
+
+        settings = HARDCODED_TRANSITIONS[
+            date_string
+        ]
+
+        morning = pd.Timestamp(
+            f"{date_string} {settings['morning']}"
+        )
+
+        evening = pd.Timestamp(
+            f"{date_string} {settings['evening']}"
+        )
+
+        return morning, evening
+
+    # AUTOMATIC TRANSITION
+    morning = find_transition_point(
+        day_data,
+        MORNING_SEARCH_START,
+        MORNING_SEARCH_END,
+    )
+
+    evening = find_transition_point(
+        day_data,
+        EVENING_SEARCH_START,
+        EVENING_SEARCH_END,
+    )
+
+    return morning, evening
+
+
+def create_combined_heat_flux(
+    day_data: pd.DataFrame,
+    morning_transition,
+    evening_transition,
+):
+    """
+    Create one combined sensible heat flux curve.
+
+    Before sunrise:
+        Heat_night
+
+    Between sunrise and evening transition:
+        Heat_day
+
+    After evening transition:
+        Heat_night
+
+    No interpolation is performed at the transitions.
+    """
+
+    combined = pd.Series(
+        index=day_data.index,
+        dtype=float,
+    )
+
+    # NIGHT BEFORE MORNING TRANSITION
+    night_before_morning = (
+        day_data["timestamp"]
+        < morning_transition
+    )
+
+    combined.loc[
+        night_before_morning
+    ] = day_data.loc[
+        night_before_morning,
+        "Heat_night",
+    ]
+
+    # DAY
+    day_period = (
+        (day_data["timestamp"] >= morning_transition)
+        & (
+            day_data["timestamp"]
+            <= evening_transition
+        )
+    )
+
+    combined.loc[
+        day_period
+    ] = day_data.loc[
+        day_period,
+        "Heat_day",
+    ]
+
+    # NIGHT AFTER EVENING TRANSITION
+    night_after_evening = (
+        day_data["timestamp"]
+        > evening_transition
+    )
+
+    combined.loc[
+        night_after_evening
+    ] = day_data.loc[
+        night_after_evening,
+        "Heat_night",
+    ]
+
+    return combined
+
+
+def get_annotation_position(
+    ax,
+    timestamp,
+    value,
+    day_data,
+    position="top",
+):
+    """
+    Calculate a suitable position for a transition annotation.
+
+    Morning transition:
+        annotation is placed above and to the LEFT.
+
+    Evening transition:
+        annotation is placed below and to the RIGHT.
+
+    Returns
+    -------
+    tuple
+        (x_offset, y_offset) in display points.
+    """
+
+    # ------------------------------------------------------------------------
+    # LOCAL DATA AROUND TRANSITION
+    # ------------------------------------------------------------------------
+
+    window_start = (
+        timestamp
+        - pd.Timedelta(minutes=60)
+    )
+
+    window_end = (
+        timestamp
+        + pd.Timedelta(minutes=60)
+    )
+
+    local_data = day_data[
+        (
+            day_data["timestamp"]
+            >= window_start
+        )
+        & (
+            day_data["timestamp"]
+            <= window_end
+        )
+    ].copy()
+
+    # ------------------------------------------------------------------------
+    # FALLBACK
+    # ------------------------------------------------------------------------
+
+    if local_data.empty:
+
+        if position == "top":
+            return -80, 50
+
+        return 15, -55
+
+    # ------------------------------------------------------------------------
+    # LOCAL VALUES
+    # ------------------------------------------------------------------------
+
+    local_values = pd.concat(
+        [
+            local_data["Heat_day"],
+            local_data["Heat_night"],
+        ]
+    ).dropna()
+
+    if local_values.empty:
+
+        if position == "top":
+            return -80, 50
+
+        return 15, -55
+
+    local_min = local_values.min()
+    local_max = local_values.max()
+
+    local_range = (
+        local_max
+        - local_min
+    )
+
+    if local_range == 0:
+        local_range = 1.0
+
+    # ------------------------------------------------------------------------
+    # MORNING: ABOVE + LEFT
+    # ------------------------------------------------------------------------
+
+    if position == "top":
+
+        distance = max(
+            local_range * 0.35,
+            10,
+        )
+
+        y_offset = (
+            35
+            + (
+                distance
+                / local_range
+                * 20
+            )
+        )
+
+        # Negative = move text to the LEFT
+        x_offset = -85
+
+        return x_offset, y_offset
+
+    # ------------------------------------------------------------------------
+    # EVENING: BELOW + RIGHT
+    # ------------------------------------------------------------------------
+
+    distance = max(
+        local_range * 0.35,
+        10,
+    )
+
+    y_offset = (
+        -35
+        - (
+            distance
+            / local_range
+            * 20
+        )
+    )
+
+    # Positive = move text to the RIGHT
+    x_offset = 15
+
+    return x_offset, y_offset
+
+
+# NEW: PLOT COMBINED DAY/NIGHT CURVE
+def plot_combined_daily_cycle(
+    res: pd.DataFrame,
+) -> None:
+    """
+    Create an additional plot for every day containing:
+
+    - combined day/night curve in the foreground
+    - Heat_day in the background with 50% transparency
+    - Heat_night in the background with 50% transparency
+    - automatic or manually defined transition points
+    - labels showing the transition times
+    """
 
     PLOT_FOLDER.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    # ========================================================================
     # CHECK REQUIRED COLUMNS
-    # ========================================================================
-
     required_columns = {
         "timestamp",
         "Heat_day",
@@ -89,10 +496,7 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
             f"Missing RES columns: {sorted(missing)}"
         )
 
-    # ========================================================================
     # PREPARE DATA
-    # ========================================================================
-
     res = res.copy()
 
     res["timestamp"] = pd.to_datetime(
@@ -103,10 +507,396 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
         "timestamp"
     )
 
-    # ========================================================================
-    # ALL DAYS
-    # ========================================================================
+    res["date"] = res[
+        "timestamp"
+    ].dt.date
 
+    # INDIVIDUAL DAILY PLOTS
+    for date, day_data in res.groupby(
+        "date"
+    ):
+
+        day_data = day_data.copy()
+
+        # FIND TRANSITIONS
+        morning_transition, evening_transition = (
+            get_transition_times(
+                day_data,
+                date,
+            )
+        )
+
+        # If a transition could not be found, skip the day.
+        if (
+            morning_transition is None
+            or evening_transition is None
+        ):
+            print(
+                f"WARNING: Could not determine transitions for "
+                f"{pd.Timestamp(date).strftime('%d.%m.%Y')}"
+            )
+
+            continue
+
+        # CREATE COMBINED CURVE
+        day_data["Heat_combined"] = (
+            create_combined_heat_flux(
+                day_data,
+                morning_transition,
+                evening_transition,
+            )
+        )
+
+        date_string = pd.Timestamp(
+            date
+        ).strftime(
+            "%d.%m.%Y"
+        )
+
+
+        # FIGURE
+        fig, ax = plt.subplots(
+            figsize=(14, 6)
+        )
+
+
+        # BACKGROUND: ORIGINAL DAY CURVE
+        ax.plot(
+            day_data["timestamp"],
+            day_data["Heat_day"],
+            label="Heat day (background)",
+            color="tab:red",
+            linewidth=1.0,
+            alpha=0.25,
+        )
+
+        # BACKGROUND: ORIGINAL NIGHT CURVE
+        ax.plot(
+            day_data["timestamp"],
+            day_data["Heat_night"],
+            label="Heat night (background)",
+            color="tab:blue",
+            linewidth=1.0,
+            alpha=0.5,
+        )
+
+        # FOREGROUND: COMBINED CURVE
+        ax.plot(
+            day_data["timestamp"],
+            day_data["Heat_combined"],
+            label="combined diurnal cycle",
+            color="black",
+            linewidth=1.0,
+            zorder=5,
+        )
+
+        # TRANSITION POINTS
+        # Find actual values at transition points
+        morning_row = day_data.iloc[
+            (
+                day_data["timestamp"]
+                - morning_transition
+            ).abs().argsort()[:1]
+        ]
+
+        evening_row = day_data.iloc[
+            (
+                day_data["timestamp"]
+                - evening_transition
+            ).abs().argsort()[:1]
+        ]
+
+        # MORNING POINT
+        morning_value_day = morning_row[
+            "Heat_day"
+        ].iloc[0]
+
+        morning_value_night = morning_row[
+            "Heat_night"
+        ].iloc[0]
+
+        morning_value = (
+            morning_value_day
+            + morning_value_night
+        ) / 2
+
+        ax.axvline(
+            morning_transition,
+            color="gray",
+            linestyle="--",
+            linewidth=1.0,
+            alpha=0.7,
+        )
+
+        ax.scatter(
+            morning_transition,
+            morning_value,
+            color="black",
+            s=35,
+            zorder=10,
+        )
+
+        morning_x_offset, morning_y_offset = (
+            get_annotation_position(
+                ax,
+                morning_transition,
+                morning_value,
+                day_data,
+                position="top",
+            )
+        )
+
+        ax.annotate(
+            (
+                "Night → Day\n"
+                f"{morning_transition.strftime('%H:%M')}"
+            ),
+            xy=(
+                morning_transition,
+                morning_value,
+            ),
+            xytext=(
+                morning_x_offset,
+                morning_y_offset,
+            ),
+            textcoords="offset points",
+            fontsize=9,
+            ha="right",
+            va="bottom",
+            arrowprops=dict(
+                arrowstyle="->",
+                color="black",
+            ),
+            bbox=dict(
+                boxstyle="round,pad=0.25",
+                facecolor="white",
+                edgecolor="none",
+                alpha=0.75,
+            ),
+        )
+
+        # EVENING POINT
+        evening_value_day = evening_row[
+            "Heat_day"
+        ].iloc[0]
+
+        evening_value_night = evening_row[
+            "Heat_night"
+        ].iloc[0]
+
+        evening_value = (
+            evening_value_day
+            + evening_value_night
+        ) / 2
+
+        ax.axvline(
+            evening_transition,
+            color="gray",
+            linestyle="--",
+            linewidth=1.0,
+            alpha=0.7,
+        )
+
+        ax.scatter(
+            evening_transition,
+            evening_value,
+            color="black",
+            s=35,
+            zorder=10,
+        )
+
+        evening_x_offset, evening_y_offset = (
+            get_annotation_position(
+                ax,
+                evening_transition,
+                evening_value,
+                day_data,
+                position="bottom",
+            )
+        )
+
+        ax.annotate(
+            (
+                "Day → Night\n"
+                f"{evening_transition.strftime('%H:%M')}"
+            ),
+            xy=(
+                evening_transition,
+                evening_value,
+            ),
+            xytext=(
+                evening_x_offset,
+                evening_y_offset,
+            ),
+            textcoords="offset points",
+            fontsize=9,
+            ha="left",
+            va="top",
+            arrowprops=dict(
+                arrowstyle="->",
+                color="black",
+            ),
+            bbox=dict(
+                boxstyle="round,pad=0.25",
+                facecolor="white",
+                edgecolor="none",
+                alpha=0.75,
+            ),
+        )
+
+        # LABEL THE REGIONS
+        # Determine y-position for region labels
+        y_min, y_max = ax.get_ylim()
+
+        y_label = y_min + 0.92 * (
+            y_max - y_min
+        )
+
+        # Night before sunrise
+        ax.text(
+            (
+                day_data["timestamp"].min()
+                + (
+                    morning_transition
+                    - day_data["timestamp"].min()
+                ) / 2
+            ),
+            y_label,
+            "Night curve visible",
+            ha="center",
+            va="top",
+            fontsize=9,
+            color="tab:blue",
+            alpha=0.8,
+        )
+
+        # Day
+        ax.text(
+            (
+                morning_transition
+                + (
+                    evening_transition
+                    - morning_transition
+                ) / 2
+            ),
+            y_label,
+            "Day curve visible",
+            ha="center",
+            va="top",
+            fontsize=9,
+            color="tab:red",
+            alpha=0.8,
+        )
+
+        # Night after sunset
+        ax.text(
+            (
+                evening_transition
+                + (
+                    day_data["timestamp"].max()
+                    - evening_transition
+                ) / 2
+            ),
+            y_label,
+            "Night curve visible",
+            ha="center",
+            va="top",
+            fontsize=9,
+            color="tab:blue",
+            alpha=0.8,
+        )
+
+        # FORMATTING
+        ax.set_title(
+            (
+                f"{date_string} – SLS20 – "
+                "combined sensible heat flux diurnal cycle "
+            )
+        )
+
+        ax.set_ylabel(
+            "Sensible heat flux [$W/m^2$]"
+        )
+
+        ax.grid(
+            True,
+            alpha=0.3,
+        )
+
+        format_time_axis(
+            ax
+        )
+
+        ax.legend()
+
+        fig.tight_layout()
+
+        # SAVE
+        output = (
+            PLOT_FOLDER
+            / (
+                f"{date_string}_"
+                "SLS20_sensible_heat_flux_combined.png"
+            )
+        )
+
+        fig.savefig(
+            output,
+            dpi=300,
+            bbox_inches="tight",
+        )
+
+        plt.close(fig)
+
+        print(
+            f"Saved combined plot: {output}"
+        )
+
+        print(
+            f"  Morning transition: "
+            f"{morning_transition.strftime('%H:%M')}"
+        )
+
+        print(
+            f"  Evening transition: "
+            f"{evening_transition.strftime('%H:%M')}"
+        )
+
+
+# EXISTING PLOT
+def plot_heat_flux(res: pd.DataFrame) -> None:
+
+    PLOT_FOLDER.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    # CHECK REQUIRED COLUMNS
+    required_columns = {
+        "timestamp",
+        "Heat_day",
+        "Heat_night",
+    }
+
+    missing = required_columns - set(res.columns)
+
+    if missing:
+        raise ValueError(
+            f"Missing RES columns: {sorted(missing)}"
+        )
+
+    # PREPARE DATA
+    res = res.copy()
+
+    res["timestamp"] = pd.to_datetime(
+        res["timestamp"]
+    )
+
+    res = res.sort_values(
+        "timestamp"
+    )
+
+    # ALL DAYS
     fig, ax = plt.subplots(
         figsize=(14, 6)
     )
@@ -142,16 +932,10 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
 
     ax.legend()
 
-    # ------------------------------------------------------------------------
     # X-AXIS: ONLY TIME
-    # ------------------------------------------------------------------------
-
     format_time_axis(ax)
 
-    # ------------------------------------------------------------------------
     # DATE LABELS: ONE DATE PER DAY, CENTERED
-    # ------------------------------------------------------------------------
-
     dates = sorted(
         res["timestamp"].dt.date.unique()
     )
@@ -161,7 +945,6 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
         dates,
     )
 
-    # Extra space below the axis for the dates
     fig.subplots_adjust(
         bottom=0.20
     )
@@ -185,10 +968,7 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
         f"Saved: {output}"
     )
 
-    # ========================================================================
     # INDIVIDUAL DAYS
-    # ========================================================================
-
     res["date"] = res[
         "timestamp"
     ].dt.date
@@ -238,11 +1018,9 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
 
         ax.legend()
 
-        # --------------------------------------------------------------------
-        # X-AXIS: ONLY TIME
-        # --------------------------------------------------------------------
-
-        format_time_axis(ax)
+        format_time_axis(
+            ax
+        )
 
         fig.autofmt_xdate()
 
@@ -266,6 +1044,7 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
         )
 
 
+# MAIN
 def main():
 
     print(
@@ -281,6 +1060,7 @@ def main():
     )
 
     print()
+
     print(
         "Loading SLS20 data..."
     )
@@ -288,8 +1068,12 @@ def main():
     res, dgn = load_sls20_data(
         DATA_FOLDER
     )
+    res = prepare_sls20_timestamps(
+        res
+    )
 
     print()
+
     print(
         f"DGN rows: {len(dgn)}"
     )
@@ -299,6 +1083,7 @@ def main():
     )
 
     print()
+
     print(
         "RES columns:"
     )
@@ -307,7 +1092,18 @@ def main():
         list(res.columns)
     )
 
+    # EXISTING PLOTS
     plot_heat_flux(
+        res
+    )
+
+    # NEW COMBINED DAY/NIGHT PLOTS
+    print()
+    print(
+        "Creating combined day/night plots..."
+    )
+
+    plot_combined_daily_cycle(
         res
     )
 
