@@ -32,10 +32,7 @@ EVENING_SEARCH_START = 18
 EVENING_SEARCH_END = 19
 
 
-# ============================================================================
 # OPTIONAL HARDCODED TRANSITIONS
-# ============================================================================
-
 # If the automatic detection gives a bad result for a specific day,
 # you can define the transition times manually here.
 #
@@ -863,6 +860,278 @@ def plot_combined_daily_cycle(
         )
 
 
+def plot_combined_all_days(
+    res: pd.DataFrame,
+) -> None:
+    """
+    Create one combined plot containing all days.
+
+    For every day:
+        - Heat_day is shown in the background
+        - Heat_night is shown in the background
+        - the combined day/night curve is shown in black
+        - the automatically detected transition times are marked
+
+    Each day is processed independently so that every day
+    gets its own morning and evening transition.
+    """
+
+    PLOT_FOLDER.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    # CHECK REQUIRED COLUMNS
+    required_columns = {
+        "timestamp",
+        "Heat_day",
+        "Heat_night",
+    }
+
+    missing = required_columns - set(res.columns)
+
+    if missing:
+        raise ValueError(
+            f"Missing RES columns: {sorted(missing)}"
+        )
+
+    # PREPARE DATA
+    res = res.copy()
+
+    res["timestamp"] = pd.to_datetime(
+        res["timestamp"]
+    )
+
+    res = res.sort_values(
+        "timestamp"
+    )
+
+    res["date"] = res[
+        "timestamp"
+    ].dt.date
+
+    # FIGURE
+    fig, ax = plt.subplots(
+        figsize=(14, 6)
+    )
+
+    # PROCESS EACH DAY
+    for date, day_data in res.groupby(
+        "date"
+    ):
+
+        day_data = day_data.copy()
+
+        # FIND TRANSITIONS FOR THIS DAY
+        morning_transition, evening_transition = (
+            get_transition_times(
+                day_data,
+                date,
+            )
+        )
+
+        # Skip day if transition could not be determined
+        if (
+            morning_transition is None
+            or evening_transition is None
+        ):
+            print(
+                f"WARNING: Could not determine transitions for "
+                f"{pd.Timestamp(date).strftime('%d.%m.%Y')}"
+            )
+            continue
+
+        # CREATE COMBINED CURVE
+        day_data["Heat_combined"] = (
+            create_combined_heat_flux(
+                day_data,
+                morning_transition,
+                evening_transition,
+            )
+        )
+
+        # BACKGROUND CURVES
+        ax.plot(
+            day_data["timestamp"],
+            day_data["Heat_day"],
+            color="tab:red",
+            linewidth=0.8,
+            alpha=0.20,
+        )
+
+        ax.plot(
+            day_data["timestamp"],
+            day_data["Heat_night"],
+            color="tab:blue",
+            linewidth=0.8,
+            alpha=0.35,
+        )
+
+        # COMBINED CURVE
+        ax.plot(
+            day_data["timestamp"],
+            day_data["Heat_combined"],
+            color="black",
+            linewidth=1.0,
+            zorder=5,
+        )
+
+        # TRANSITION LINES
+        ax.axvline(
+            morning_transition,
+            color="gray",
+            linestyle="--",
+            linewidth=0.8,
+            alpha=0.6,
+        )
+
+        ax.axvline(
+            evening_transition,
+            color="gray",
+            linestyle="--",
+            linewidth=0.8,
+            alpha=0.6,
+        )
+
+        # TRANSITION POINT VALUES
+        morning_row = day_data.iloc[
+            (
+                day_data["timestamp"]
+                - morning_transition
+            ).abs().argsort()[:1]
+        ]
+
+        evening_row = day_data.iloc[
+            (
+                day_data["timestamp"]
+                - evening_transition
+            ).abs().argsort()[:1]
+        ]
+
+        morning_value_day = morning_row[
+            "Heat_day"
+        ].iloc[0]
+
+        morning_value_night = morning_row[
+            "Heat_night"
+        ].iloc[0]
+
+        morning_value = (
+            morning_value_day
+            + morning_value_night
+        ) / 2
+
+        evening_value_day = evening_row[
+            "Heat_day"
+        ].iloc[0]
+
+        evening_value_night = evening_row[
+            "Heat_night"
+        ].iloc[0]
+
+        evening_value = (
+            evening_value_day
+            + evening_value_night
+        ) / 2
+
+        ax.scatter(
+            morning_transition,
+            morning_value,
+            color="black",
+            s=25,
+            zorder=10,
+        )
+
+        ax.scatter(
+            evening_transition,
+            evening_value,
+            color="black",
+            s=25,
+            zorder=10,
+        )
+
+    # LABELS
+    ax.set_title(
+        "SLS20 – combined sensible heat flux diurnal cycles"
+    )
+
+    ax.set_ylabel(
+        "Sensible heat flux [$W/m^2$]"
+    )
+
+    ax.grid(
+        True,
+        alpha=0.3,
+    )
+
+    format_time_axis(
+        ax
+    )
+
+    # DATE LABELS
+    dates = sorted(
+        res["timestamp"].dt.date.unique()
+    )
+
+    add_day_labels(
+        ax,
+        dates,
+    )
+
+    # LEGEND
+    ax.plot(
+        [],
+        [],
+        label="Heat day (background)",
+        color="tab:red",
+        linewidth=1.0,
+        alpha=0.25,
+    )
+
+    ax.plot(
+        [],
+        [],
+        label="Heat night (background)",
+        color="tab:blue",
+        linewidth=1.0,
+        alpha=0.5,
+    )
+
+    ax.plot(
+        [],
+        [],
+        label="combined diurnal cycle",
+        color="black",
+        linewidth=1.0,
+    )
+
+    ax.legend()
+
+    fig.subplots_adjust(
+        bottom=0.20
+    )
+
+    fig.tight_layout()
+
+    # SAVE
+    output = (
+        PLOT_FOLDER
+        / "SLS20_sensible_heat_flux_combined_all_days.png"
+    )
+
+    fig.savefig(
+        output,
+        dpi=300,
+        bbox_inches="tight",
+    )
+
+    plt.close(fig)
+
+    print(
+        f"Saved combined all-days plot: {output}"
+    )
+
+
 # EXISTING PLOT
 def plot_heat_flux(res: pd.DataFrame) -> None:
 
@@ -1104,6 +1373,11 @@ def main():
     )
 
     plot_combined_daily_cycle(
+        res
+    )
+
+    # One plot containing all days
+    plot_combined_all_days(
         res
     )
 
