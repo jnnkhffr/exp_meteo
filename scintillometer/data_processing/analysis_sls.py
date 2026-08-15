@@ -16,6 +16,14 @@ PLOT_FOLDER = Path(
     r"\land_water"
 )
 
+CSV_FOLDER = Path(
+    r"X:\BLS2000\placetohitsomeone"
+)
+
+CSV_FILENAME = (
+    "SLS20_sensible_heat_flux_combined.csv"
+)
+
 
 # SETTINGS FOR DAY/NIGHT TRANSITION
 
@@ -458,6 +466,157 @@ def get_annotation_position(
     x_offset = 15
 
     return x_offset, y_offset
+
+
+def save_combined_heat_flux_csv(
+    res: pd.DataFrame,
+) -> None:
+    """
+    Save the combined black Heat_combined curve
+    for all days into one CSV file.
+
+    Only timestamps with a valid combined heat flux
+    value are saved.
+    """
+
+    CSV_FOLDER.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    # CHECK REQUIRED COLUMNS
+    required_columns = {
+        "timestamp",
+        "Heat_day",
+        "Heat_night",
+    }
+
+    missing = required_columns - set(res.columns)
+
+    if missing:
+        raise ValueError(
+            f"Missing RES columns: {sorted(missing)}"
+        )
+
+    # PREPARE DATA
+    res = res.copy()
+
+    res["timestamp"] = pd.to_datetime(
+        res["timestamp"]
+    )
+
+    res = res.sort_values(
+        "timestamp"
+    )
+
+    res["date"] = res[
+        "timestamp"
+    ].dt.date
+
+    combined_rows = []
+
+    # PROCESS EACH DAY
+    for date, day_data in res.groupby(
+        "date"
+    ):
+
+        day_data = day_data.copy()
+
+        # FIND TRANSITIONS
+        morning_transition, evening_transition = (
+            get_transition_times(
+                day_data,
+                date,
+            )
+        )
+
+        # Skip day if transitions cannot be determined
+        if (
+            morning_transition is None
+            or evening_transition is None
+        ):
+            print(
+                f"WARNING: Could not determine transitions for "
+                f"{pd.Timestamp(date).strftime('%d.%m.%Y')} "
+                f"for CSV export"
+            )
+            continue
+
+        # CREATE THE SAME BLACK CURVE
+        day_data["heat_combined"] = (
+            create_combined_heat_flux(
+                day_data,
+                morning_transition,
+                evening_transition,
+            )
+        )
+
+        # KEEP ONLY VALID COMBINED VALUES
+        valid = day_data[
+            day_data["heat_combined"].notna()
+        ].copy()
+
+        if valid.empty:
+            continue
+
+        # Add transition information
+        valid["morning_transition"] = (
+            morning_transition
+        )
+
+        valid["evening_transition"] = (
+            evening_transition
+        )
+
+        combined_rows.append(
+            valid[
+                [
+                    "timestamp",
+                    "heat_combined",
+                    "morning_transition",
+                    "evening_transition",
+                ]
+            ]
+        )
+
+    # CHECK IF ANY DATA EXISTS
+    if not combined_rows:
+        print(
+            "WARNING: No valid combined heat flux data "
+            "available for CSV export."
+        )
+        return
+
+    # COMBINE ALL DAYS
+    output_data = pd.concat(
+        combined_rows,
+        ignore_index=True,
+    )
+
+    output_data = output_data.sort_values(
+        "timestamp"
+    )
+
+    # SAVE CSV
+    output = (
+        CSV_FOLDER
+        / CSV_FILENAME
+    )
+
+    output_data.to_csv(
+        output,
+        index=False,
+        sep=";",
+        decimal=".",
+    )
+
+    print(
+        f"Saved combined heat flux CSV: {output}"
+    )
+
+    print(
+        f"CSV rows: {len(output_data)}"
+    )
 
 
 # NEW: PLOT COMBINED DAY/NIGHT CURVE
@@ -1384,6 +1543,16 @@ def main():
     print()
     print(
         "Done."
+    )
+
+    # SAVE BLACK COMBINED CURVE AS CSV
+    print()
+    print(
+        "Saving combined day/night curve to CSV..."
+    )
+
+    save_combined_heat_flux_csv(
+        res
     )
 
 
