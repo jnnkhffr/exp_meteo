@@ -24,6 +24,13 @@ CSV_FILENAME = (
     "SLS20_sensible_heat_flux_combined.csv"
 )
 
+# Length of the continuous interval used to identify
+# a stable transition.
+TRANSITION_WINDOW_MINUTES = 5
+
+# Minimum number of measurements that must exist
+# inside the interval.
+TRANSITION_MIN_POINTS = 4
 
 # SETTINGS FOR DAY/NIGHT TRANSITION
 
@@ -155,20 +162,39 @@ def find_transition_point(
     end_hour: int,
 ):
     """
-    Find the timestamp where Heat_day and Heat_night are closest.
+    Find the transition using a continuous time window.
 
-    Only rows where both Heat_day and Heat_night contain valid
-    numerical values are considered.
+    The search window is evaluated using consecutive time intervals.
 
-    Returns
-    -------
-    pd.Timestamp or None
-        Timestamp of the transition.
+    Example with TRANSITION_WINDOW_MINUTES = 5:
+
+        06:00 - 06:05
+        06:01 - 06:06
+        06:02 - 06:07
+        ...
+
+    For every interval, the mean absolute difference between
+    Heat_day and Heat_night is calculated.
+
+    The interval with the smallest mean difference is selected.
+
+    The transition time is the center of the selected interval.
     """
 
+    # SEARCH WINDOW
+    start_time = (
+        day_data["timestamp"].dt.normalize()
+        + pd.Timedelta(hours=start_hour)
+    )
+
+    end_time = (
+        day_data["timestamp"].dt.normalize()
+        + pd.Timedelta(hours=end_hour)
+    )
+
     mask = (
-        (day_data["timestamp"].dt.hour >= start_hour)
-        & (day_data["timestamp"].dt.hour <= end_hour)
+        (day_data["timestamp"] >= start_time)
+        & (day_data["timestamp"] <= end_time)
     )
 
     window = day_data.loc[
@@ -180,7 +206,11 @@ def find_transition_point(
         ],
     ].copy()
 
-    # Remove rows where one of the two curves is NaN
+    window = window.sort_values(
+        "timestamp"
+    )
+
+    # Remove invalid measurements
     window = window.dropna(
         subset=[
             "Heat_day",
@@ -191,25 +221,104 @@ def find_transition_point(
     if window.empty:
         return None
 
-    # Absolute difference between day and night curve
+    # DIFFERENCE BETWEEN DAY AND NIGHT CURVE
     window["difference"] = (
         window["Heat_day"]
         - window["Heat_night"]
     ).abs()
 
-    window = window.dropna(
-        subset=["difference"]
+    # SLIDING TIME WINDOWS
+    candidates = []
+
+    interval = pd.Timedelta(
+        minutes=TRANSITION_WINDOW_MINUTES
     )
 
-    if window.empty:
+    timestamps = window["timestamp"].tolist()
+
+    for start_timestamp in timestamps:
+
+        end_timestamp = (
+            start_timestamp
+            + interval
+        )
+
+        interval_data = window[
+            (
+                window["timestamp"]
+                >= start_timestamp
+            )
+            & (
+                window["timestamp"]
+                <= end_timestamp
+            )
+        ]
+
+        # Need enough actual measurements
+        if len(interval_data) < TRANSITION_MIN_POINTS:
+            continue
+
+        # Make sure the interval really contains data
+        # throughout the requested time period.
+        actual_duration = (
+            interval_data["timestamp"].max()
+            - interval_data["timestamp"].min()
+        )
+
+        if actual_duration < interval * 0.8:
+            continue
+
+        # QUALITY OF THIS INTERVAL
+        mean_difference = (
+            interval_data["difference"].mean()
+        )
+
+        max_difference = (
+            interval_data["difference"].max()
+        )
+
+        std_difference = (
+            interval_data["difference"].std()
+        )
+
+        if pd.isna(std_difference):
+            std_difference = 0.0
+
+        candidates.append(
+            {
+                "start": start_timestamp,
+                "end": end_timestamp,
+                "mean_difference": mean_difference,
+                "max_difference": max_difference,
+                "std_difference": std_difference,
+            }
+        )
+
+    if not candidates:
         return None
 
-    idx = window["difference"].idxmin()
+    # FIND BEST CONTINUOUS INTERVAL
+    candidates = sorted(
+        candidates,
+        key=lambda x: (
+            x["mean_difference"],
+            x["std_difference"],
+            x["max_difference"],
+        ),
+    )
 
-    return window.loc[
-        idx,
-        "timestamp",
-    ]
+    best = candidates[0]
+
+    # TRANSITION = CENTER OF INTERVAL
+    transition = (
+        best["start"]
+        + (
+            best["end"]
+            - best["start"]
+        ) / 2
+    )
+
+    return transition
 
 
 def get_transition_times(
@@ -444,10 +553,7 @@ def get_annotation_position(
 
         return x_offset, y_offset
 
-    # ------------------------------------------------------------------------
     # EVENING: BELOW + RIGHT
-    # ------------------------------------------------------------------------
-
     distance = max(
         local_range * 0.35,
         10,
@@ -1193,21 +1299,21 @@ def plot_combined_all_days(
             + evening_value_night
         ) / 2
 
-        ax.scatter(
-            morning_transition,
-            morning_value,
-            color="black",
-            s=25,
-            zorder=10,
-        )
+        #ax.scatter(
+        #    morning_transition,
+        #    morning_value,
+        #    color="black",
+        #    s=25,
+        #    zorder=10,
+        #)
 
-        ax.scatter(
-            evening_transition,
-            evening_value,
-            color="black",
-            s=25,
-            zorder=10,
-        )
+        #ax.scatter(
+        #    evening_transition,
+        #    evening_value,
+        #    color="black",
+        #    s=25,
+        #    zorder=10,
+        #)
 
     # LABELS
     ax.set_title(
