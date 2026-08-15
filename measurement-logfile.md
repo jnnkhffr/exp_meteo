@@ -67,3 +67,11 @@ Check if both thermometers come into the building's shadow at the same time at a
 ### 16:43 - 16:54
 - Simon is holding a Kühlakku (mobile freezing block) in front of the KT19
 - Actually we redirected the KT19 towards Fastensee. It's not the lake above which the BLS path goes, but it's closer and thus easier to aim at. We assume both Fastensee and Nördlicher Binnensee to have the same water surface temperature.
+
+# 15th Aug
+## SLS 20
+### 10:38
+- Pierre retrieved data for 14th and currently available for 15th Aug.
+
+## KT19
+- Water surface temperature is being measured :D.
