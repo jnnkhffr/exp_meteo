@@ -35,9 +35,11 @@ Are the WXT values being recorded?
 ### 10:08
 - Signal survived throughout the night :D. Reduced power usage fix seems to have worked.
 - Data is retrieved once a day at 1:00am instead of once an hour.
+### afternoon
+- Signal also survived throughout peak sun intensity! Hooray!
 ## SLS 20
 ### 9:40
-- Jannik retrieved data for 11th and 12th Aug
+- Jannik retrieved data for 11th, 12th Aug and the currently available data for 13th Aug.
 
 - Short bursts of low data availability (0-20%) during the night, reasons unknown.
 - Data availability is almost always at 80-100%.
@@ -50,3 +52,18 @@ Are the WXT values being recorded?
 
 Check if both thermometers come into the building's shadow at the same time at around 12:50 CEST.
 -> they do
+
+# 14th Aug
+## BLS 2000
+### 11:10 - 14:00
+- Mapped BLS Path more accurately using Google Earth. Path length = 942m, mean path height = 6m.
+- BLS is yet to be recalculated with this data, as well as with variable temperature, pressure and humidity data.
+## SLS 20
+### 9:30
+- Jannik and Pierre retrieved data.
+### 16:40
+- Jannik and Pierre retrieved data.
+## KT19
+### 16:43 - 16:54
+- Simon is holding a Kühlakku (mobile freezing block) in front of the KT19
+- Actually we redirected the KT19 towards Fastensee. It's not the lake above which the BLS path goes, but it's closer and thus easier to aim at. We assume both Fastensee and Nördlicher Binnensee to have the same water surface temperature.
