@@ -77,3 +77,18 @@ Check if both thermometers come into the building's shadow at the same time at a
 
 ## KT19
 - Water surface temperature is being measured :D.
+
+# 16th Aug
+- Day off.
+
+# 17th Aug
+## SLS 20
+- Received signal lost intensity over the weekend.
+### 9:29 - 9:49
+- Stopped measurements.
+- Re-aligned transmitter and receiver. Received signal is now stronger.
+- Restarted measurements.
+
+## Misc
+### 11:30-11:50
+- Jannik flew a drone and took nice pictures.
