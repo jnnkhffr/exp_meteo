@@ -463,10 +463,7 @@ def get_annotation_position(
         (x_offset, y_offset) in display points.
     """
 
-    # ------------------------------------------------------------------------
     # LOCAL DATA AROUND TRANSITION
-    # ------------------------------------------------------------------------
-
     window_start = (
         timestamp
         - pd.Timedelta(minutes=60)
@@ -488,10 +485,7 @@ def get_annotation_position(
         )
     ].copy()
 
-    # ------------------------------------------------------------------------
     # FALLBACK
-    # ------------------------------------------------------------------------
-
     if local_data.empty:
 
         if position == "top":
@@ -499,10 +493,7 @@ def get_annotation_position(
 
         return 15, -55
 
-    # ------------------------------------------------------------------------
     # LOCAL VALUES
-    # ------------------------------------------------------------------------
-
     local_values = pd.concat(
         [
             local_data["Heat_day"],
@@ -528,10 +519,7 @@ def get_annotation_position(
     if local_range == 0:
         local_range = 1.0
 
-    # ------------------------------------------------------------------------
     # MORNING: ABOVE + LEFT
-    # ------------------------------------------------------------------------
-
     if position == "top":
 
         distance = max(
@@ -725,7 +713,6 @@ def save_combined_heat_flux_csv(
     )
 
 
-# NEW: PLOT COMBINED DAY/NIGHT CURVE
 def plot_combined_daily_cycle(
     res: pd.DataFrame,
 ) -> None:
