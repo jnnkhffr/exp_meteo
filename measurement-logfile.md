@@ -72,6 +72,8 @@ Check if both thermometers come into the building's shadow at the same time at a
 ## SLS 20
 ### 10:38
 - Pierre retrieved data for 14th and currently available for 15th Aug.
+### ca. 14:20 - 15:00
+- Rain: no valid SLS data.
 ### 15:55
 - Jannik retrieved more recent data.
 
