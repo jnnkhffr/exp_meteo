@@ -94,3 +94,7 @@ Check if both thermometers come into the building's shadow at the same time at a
 ## Misc
 ### 11:30-11:50
 - Jannik flew a drone and took nice pictures.
+
+## BLS 2000
+### 14:37
+- Simon reprocessed BLS data with a path length of 942m, a path height of 6.7m and pressure, temperature and humidity data recorded by the 3m WXT.
