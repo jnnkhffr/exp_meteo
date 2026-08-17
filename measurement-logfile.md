@@ -92,7 +92,7 @@ Check if both thermometers come into the building's shadow at the same time at a
 - Restarted measurements.
 ### 9:50
 - Jannik retrieved data.
-- 
+
 ## Misc
 ### 11:30-11:50
 - Jannik flew a drone and took nice pictures.
