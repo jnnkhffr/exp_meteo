@@ -826,7 +826,7 @@ def plot_combined_daily_cycle(
             label="Heat night (background)",
             color="tab:blue",
             linewidth=1.0,
-            alpha=0.5,
+            alpha=0.25,
         )
 
         # FOREGROUND: COMBINED CURVE
@@ -881,7 +881,7 @@ def plot_combined_daily_cycle(
             morning_transition,
             morning_value,
             color="black",
-            s=35,
+            s=15,
             zorder=10,
         )
 
@@ -950,7 +950,7 @@ def plot_combined_daily_cycle(
             evening_transition,
             evening_value,
             color="black",
-            s=35,
+            s=15,
             zorder=10,
         )
 
