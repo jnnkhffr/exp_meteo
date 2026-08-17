@@ -88,7 +88,9 @@ Check if both thermometers come into the building's shadow at the same time at a
 - Stopped measurements.
 - Re-aligned transmitter and receiver. Received signal is now stronger.
 - Restarted measurements.
-
+### 9:50
+- Jannik retrieved data.
+- 
 ## Misc
 ### 11:30-11:50
 - Jannik flew a drone and took nice pictures.
