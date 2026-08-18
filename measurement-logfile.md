@@ -66,7 +66,7 @@ Check if both thermometers come into the building's shadow at the same time at a
 ## KT19
 ### 16:43 - 16:54
 - Simon is holding a Kühlakku (mobile freezing block) in front of the KT19
-- Actually we redirected the KT19 towards Fastensee. It's not the lake above which the BLS path goes, but it's closer and thus easier to aim at. We assume both Fastensee and Nördlicher Binnensee to have the same water surface temperature.
+- Actually we redirected the KT19 towards Salzensee. It's not the lake above which the BLS path goes, but it's closer and thus easier to aim at. We assume both Fastensee and Nördlicher Binnensee to have the same water surface temperature.
 
 # 15th Aug
 ## SLS 20
@@ -91,6 +91,8 @@ Check if both thermometers come into the building's shadow at the same time at a
 - Re-aligned transmitter and receiver. Received signal is now stronger.
 - Restarted measurements.
 ### 9:50
+- Jannik retrieved data.
+### 16:50
 - Jannik retrieved data.
 
 ## Misc
