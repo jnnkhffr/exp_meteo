@@ -1,5 +1,10 @@
 Measurement logs
 
+# 10th Aug
+## SLS 20
+### 16:41
+- Started measurement.
+
 # 11th Aug
 ## BLS 2000
 ### 14:00
