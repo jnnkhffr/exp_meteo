@@ -2,7 +2,7 @@
 
 ## SLS measurements during LEX 2026 (10.08.-21.08.2026) at Fehmarn. 
 
-# *Measurement Facts:*
+# *Measurement Facts/Meta Data:*
 - ### Measurement device: Scintec SLS 20 (from University)
 - ### Path length: 67 m
 - ### Path height: 1,55 m
@@ -60,7 +60,12 @@
     - ### 16:50:
       - retrieve more data
 
+- ## 19th Aug:
+    - ### ca. 9:45 - xx:xx 
+      - Rain: no valid SLS data
 
+- ## 21th Aug:
+    - ### stopped measuring
 
 
         
