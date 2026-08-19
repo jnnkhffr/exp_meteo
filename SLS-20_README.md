@@ -7,11 +7,11 @@
 - ### Path length: 67 m
 - ### Path height: 1,55 m
 - ### Coordinates transmitter:
-  - latitude: 54,528295°
-  - longitude: 11,060884°
+  - latitude: 54,528295° (54°31'41.9"N)
+  - longitude: 11,060884° (11°03'39.2"E)
 - ### Coordinates receiver:
-  - latitude: 54,527748°
-  - longitude: 11,060508°
+  - latitude: 54,527748° (54°31'39.9"N)
+  - longitude: 11,060508° (11°03'37.8"E)
 
 # *Measurement Logs:*
 
