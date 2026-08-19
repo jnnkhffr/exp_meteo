@@ -1,15 +1,19 @@
-# BLS 2000
+# <u> BLS 2000 </u>
+
+## BLS measurements during LEX 2026 (10.08.-21.08.2026) at Fehmarn. 
 ## Metadata
+- Measurement device: Scintec BLS 2000 large aperture scintillometer (belonging to the Meteorology Department, University of Hamburg)
+
 ### Instrument positions
-Transmitter latitude:
-Transmitter longitude:
-Transmitter altitude:
+- Transmitter latitude:
+- Transmitter longitude:
+- Transmitter altitude:
 
-Receiver latitude:
-Receiver longitude:
-Receiver altitude:
+- Receiver latitude:
+- Receiver longitude:
+- Receiver altitude:
 
-Path length
+- Path length
 
 [add a position & paths picture]
 
@@ -70,3 +74,23 @@ Measurement end:   2026-08-
 # 17th Aug
 ### 14:37
 - Simon reprocessed BLS data with a path length of 942m, a path height of 6.7m and pressure, temperature and humidity data recorded by the 3m WXT.
+
+# 18th Aug
+## BLS 2000
+### 12:20
+- Jannik and Gabe reinstated pulse mode 1 (25Hz scintillations).
+- Jannik and Gabe cleaned the transmitter of sea salt.
+-> Signal strength increased.
+### ca. 18:00
+- Pierre hugged the receiver on the rooftop for a photo. No notable immediate changes in alignment.
+- Pierre stood and moved on the palette on which the receiver is set up.
+- A notable spike is seen in the receiver XB- and YB-signals.
+
+# 19th Aug
+## BLS 2000
+### 0:18:30
+- Misalignment flag appeared, no data is being recorded.
+### 12:xx - 13:0x
+- Stopped measurement.
+- Realigned receiver manually.
+- Restarted measurement.
