@@ -151,7 +151,9 @@ def add_day_labels(ax, dates):
             transform=ax.get_xaxis_transform(),
             ha="center",
             va="top",
-            fontsize=10,
+            fontsize=9,
+            rotation=45,
+            rotation_mode="anchor",
         )
 
 
