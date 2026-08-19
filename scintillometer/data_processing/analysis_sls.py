@@ -146,7 +146,7 @@ def add_day_labels(ax, dates):
 
         ax.text(
             center,
-            -0.13,
+            -0.16,
             start.strftime("%d.%m.%Y"),
             transform=ax.get_xaxis_transform(),
             ha="center",
