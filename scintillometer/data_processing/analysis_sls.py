@@ -1241,8 +1241,8 @@ def plot_combined_all_days(
             evening_transition,
             color="gray",
             linestyle="--",
-            linewidth=0.8,
-            alpha=0.6,
+            linewidth=0.5,
+            alpha=0.25,
         )
 
         # TRANSITION POINT VALUES
