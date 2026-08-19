@@ -6,6 +6,7 @@ from astral import Observer
 from astral.sun import sun
 
 import matplotlib
+
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
@@ -17,17 +18,12 @@ from scintillometer.data_import.import_sls200 import load_sls20_data
 DATA_FOLDER = Path(r"X:\SLS20")
 
 PLOT_FOLDER = Path(
-    r"C:\Users\janni\PycharmProjects\exp_meteo\scintillometer\plots"
-    r"\land_water"
+    r"C:\Users\janni\PycharmProjects\exp_meteo\scintillometer\plots" r"\land_water"
 )
 
-CSV_FOLDER = Path(
-    r"X:\BLS2000\placetohitsomeone"
-)
+CSV_FOLDER = Path(r"X:\BLS2000\placetohitsomeone")
 
-CSV_FILENAME = (
-    "SLS20_sensible_heat_flux_combined.csv"
-)
+CSV_FILENAME = "SLS20_sensible_heat_flux_combined.csv"
 
 LATITUDE = 54.527748
 LONGITUDE = 11.060508
@@ -77,6 +73,7 @@ HARDCODED_TRANSITIONS = {
     # },
 }
 
+
 def prepare_sls20_timestamps(
     res: pd.DataFrame,
 ) -> pd.DataFrame:
@@ -97,9 +94,7 @@ def prepare_sls20_timestamps(
 
     res = res.copy()
 
-    res["timestamp"] = pd.to_datetime(
-        res["timestamp"]
-    )
+    res["timestamp"] = pd.to_datetime(res["timestamp"])
 
     # Remove timezone information while preserving
     # the displayed local clock time.
@@ -107,10 +102,7 @@ def prepare_sls20_timestamps(
         res["timestamp"].dtype,
         pd.DatetimeTZDtype,
     ):
-        res["timestamp"] = (
-            res["timestamp"]
-            .dt.tz_localize(None)
-        )
+        res["timestamp"] = res["timestamp"].dt.tz_localize(None)
 
     return res
 
@@ -133,9 +125,7 @@ def format_time_axis(ax):
         )
     )
 
-    ax.set_xlabel(
-        "Time [CET]"
-    )
+    ax.set_xlabel("Time [CET]")
 
 
 def add_day_labels(ax, dates):
@@ -147,9 +137,7 @@ def add_day_labels(ax, dates):
 
         start = pd.Timestamp(date)
 
-        center = start + pd.Timedelta(
-            hours=12
-        )
+        center = start + pd.Timedelta(hours=12)
 
         ax.text(
             center,
@@ -193,17 +181,9 @@ def get_sunrise_sunset(
         tzinfo=CET,
     )
 
-    sunrise = solar_times[
-        "sunrise"
-    ].replace(
-        tzinfo=None
-    )
+    sunrise = solar_times["sunrise"].replace(tzinfo=None)
 
-    sunset = solar_times[
-        "sunset"
-    ].replace(
-        tzinfo=None
-    )
+    sunset = solar_times["sunset"].replace(tzinfo=None)
 
     return sunrise, sunset
 
@@ -234,20 +214,11 @@ def find_transition_point(
     """
 
     # SEARCH WINDOW
-    start_time = (
-        day_data["timestamp"].dt.normalize()
-        + pd.Timedelta(hours=start_hour)
-    )
+    start_time = day_data["timestamp"].dt.normalize() + pd.Timedelta(hours=start_hour)
 
-    end_time = (
-        day_data["timestamp"].dt.normalize()
-        + pd.Timedelta(hours=end_hour)
-    )
+    end_time = day_data["timestamp"].dt.normalize() + pd.Timedelta(hours=end_hour)
 
-    mask = (
-        (day_data["timestamp"] >= start_time)
-        & (day_data["timestamp"] <= end_time)
-    )
+    mask = (day_data["timestamp"] >= start_time) & (day_data["timestamp"] <= end_time)
 
     window = day_data.loc[
         mask,
@@ -258,9 +229,7 @@ def find_transition_point(
         ],
     ].copy()
 
-    window = window.sort_values(
-        "timestamp"
-    )
+    window = window.sort_values("timestamp")
 
     # Remove invalid measurements
     window = window.dropna(
@@ -274,36 +243,22 @@ def find_transition_point(
         return None
 
     # DIFFERENCE BETWEEN DAY AND NIGHT CURVE
-    window["difference"] = (
-        window["Heat_day"]
-        - window["Heat_night"]
-    ).abs()
+    window["difference"] = (window["Heat_day"] - window["Heat_night"]).abs()
 
     # SLIDING TIME WINDOWS
     candidates = []
 
-    interval = pd.Timedelta(
-        minutes=TRANSITION_WINDOW_MINUTES
-    )
+    interval = pd.Timedelta(minutes=TRANSITION_WINDOW_MINUTES)
 
     timestamps = window["timestamp"].tolist()
 
     for start_timestamp in timestamps:
 
-        end_timestamp = (
-            start_timestamp
-            + interval
-        )
+        end_timestamp = start_timestamp + interval
 
         interval_data = window[
-            (
-                window["timestamp"]
-                >= start_timestamp
-            )
-            & (
-                window["timestamp"]
-                <= end_timestamp
-            )
+            (window["timestamp"] >= start_timestamp)
+            & (window["timestamp"] <= end_timestamp)
         ]
 
         # Need enough actual measurements
@@ -313,25 +268,18 @@ def find_transition_point(
         # Make sure the interval really contains data
         # throughout the requested time period.
         actual_duration = (
-            interval_data["timestamp"].max()
-            - interval_data["timestamp"].min()
+            interval_data["timestamp"].max() - interval_data["timestamp"].min()
         )
 
         if actual_duration < interval * 0.8:
             continue
 
         # QUALITY OF THIS INTERVAL
-        mean_difference = (
-            interval_data["difference"].mean()
-        )
+        mean_difference = interval_data["difference"].mean()
 
-        max_difference = (
-            interval_data["difference"].max()
-        )
+        max_difference = interval_data["difference"].max()
 
-        std_difference = (
-            interval_data["difference"].std()
-        )
+        std_difference = interval_data["difference"].std()
 
         if pd.isna(std_difference):
             std_difference = 0.0
@@ -362,13 +310,7 @@ def find_transition_point(
     best = candidates[0]
 
     # TRANSITION = CENTER OF INTERVAL
-    transition = (
-        best["start"]
-        + (
-            best["end"]
-            - best["start"]
-        ) / 2
-    )
+    transition = best["start"] + (best["end"] - best["start"]) / 2
 
     return transition
 
@@ -384,26 +326,16 @@ def get_transition_times(
     Otherwise the transition is determined automatically.
     """
 
-    date_string = pd.Timestamp(
-        date
-    ).strftime(
-        "%d.%m.%Y"
-    )
+    date_string = pd.Timestamp(date).strftime("%d.%m.%Y")
 
     # HARDCODED TRANSITION
     if date_string in HARDCODED_TRANSITIONS:
 
-        settings = HARDCODED_TRANSITIONS[
-            date_string
-        ]
+        settings = HARDCODED_TRANSITIONS[date_string]
 
-        morning = pd.Timestamp(
-            f"{date_string} {settings['morning']}"
-        )
+        morning = pd.Timestamp(f"{date_string} {settings['morning']}")
 
-        evening = pd.Timestamp(
-            f"{date_string} {settings['evening']}"
-        )
+        evening = pd.Timestamp(f"{date_string} {settings['evening']}")
 
         return morning, evening
 
@@ -449,43 +381,27 @@ def create_combined_heat_flux(
     )
 
     # NIGHT BEFORE MORNING TRANSITION
-    night_before_morning = (
-        day_data["timestamp"]
-        < morning_transition
-    )
+    night_before_morning = day_data["timestamp"] < morning_transition
 
-    combined.loc[
-        night_before_morning
-    ] = day_data.loc[
+    combined.loc[night_before_morning] = day_data.loc[
         night_before_morning,
         "Heat_night",
     ]
 
     # DAY
-    day_period = (
-        (day_data["timestamp"] >= morning_transition)
-        & (
-            day_data["timestamp"]
-            <= evening_transition
-        )
+    day_period = (day_data["timestamp"] >= morning_transition) & (
+        day_data["timestamp"] <= evening_transition
     )
 
-    combined.loc[
-        day_period
-    ] = day_data.loc[
+    combined.loc[day_period] = day_data.loc[
         day_period,
         "Heat_day",
     ]
 
     # NIGHT AFTER EVENING TRANSITION
-    night_after_evening = (
-        day_data["timestamp"]
-        > evening_transition
-    )
+    night_after_evening = day_data["timestamp"] > evening_transition
 
-    combined.loc[
-        night_after_evening
-    ] = day_data.loc[
+    combined.loc[night_after_evening] = day_data.loc[
         night_after_evening,
         "Heat_night",
     ]
@@ -516,25 +432,12 @@ def get_annotation_position(
     """
 
     # LOCAL DATA AROUND TRANSITION
-    window_start = (
-        timestamp
-        - pd.Timedelta(minutes=60)
-    )
+    window_start = timestamp - pd.Timedelta(minutes=60)
 
-    window_end = (
-        timestamp
-        + pd.Timedelta(minutes=60)
-    )
+    window_end = timestamp + pd.Timedelta(minutes=60)
 
     local_data = day_data[
-        (
-            day_data["timestamp"]
-            >= window_start
-        )
-        & (
-            day_data["timestamp"]
-            <= window_end
-        )
+        (day_data["timestamp"] >= window_start) & (day_data["timestamp"] <= window_end)
     ].copy()
 
     # FALLBACK
@@ -563,10 +466,7 @@ def get_annotation_position(
     local_min = local_values.min()
     local_max = local_values.max()
 
-    local_range = (
-        local_max
-        - local_min
-    )
+    local_range = local_max - local_min
 
     if local_range == 0:
         local_range = 1.0
@@ -579,14 +479,7 @@ def get_annotation_position(
             10,
         )
 
-        y_offset = (
-            35
-            + (
-                distance
-                / local_range
-                * 20
-            )
-        )
+        y_offset = 35 + (distance / local_range * 20)
 
         # Negative = move text to the LEFT
         x_offset = -85
@@ -599,14 +492,7 @@ def get_annotation_position(
         10,
     )
 
-    y_offset = (
-        -35
-        - (
-            distance
-            / local_range
-            * 20
-        )
-    )
+    y_offset = -35 - (distance / local_range * 20)
 
     # Positive = move text to the RIGHT
     x_offset = 15
@@ -640,47 +526,32 @@ def save_combined_heat_flux_csv(
     missing = required_columns - set(res.columns)
 
     if missing:
-        raise ValueError(
-            f"Missing RES columns: {sorted(missing)}"
-        )
+        raise ValueError(f"Missing RES columns: {sorted(missing)}")
 
     # PREPARE DATA
     res = res.copy()
 
-    res["timestamp"] = pd.to_datetime(
-        res["timestamp"]
-    )
+    res["timestamp"] = pd.to_datetime(res["timestamp"])
 
-    res = res.sort_values(
-        "timestamp"
-    )
+    res = res.sort_values("timestamp")
 
-    res["date"] = res[
-        "timestamp"
-    ].dt.date
+    res["date"] = res["timestamp"].dt.date
 
     combined_rows = []
 
     # PROCESS EACH DAY
-    for date, day_data in res.groupby(
-        "date"
-    ):
+    for date, day_data in res.groupby("date"):
 
         day_data = day_data.copy()
 
         # FIND TRANSITIONS
-        morning_transition, evening_transition = (
-            get_transition_times(
-                day_data,
-                date,
-            )
+        morning_transition, evening_transition = get_transition_times(
+            day_data,
+            date,
         )
 
         # Skip day if transitions cannot be determined
-        if (
-            morning_transition is None
-            or evening_transition is None
-        ):
+        if morning_transition is None or evening_transition is None:
             print(
                 f"WARNING: Could not determine transitions for "
                 f"{pd.Timestamp(date).strftime('%d.%m.%Y')} "
@@ -689,30 +560,22 @@ def save_combined_heat_flux_csv(
             continue
 
         # CREATE THE SAME BLACK CURVE
-        day_data["heat_combined"] = (
-            create_combined_heat_flux(
-                day_data,
-                morning_transition,
-                evening_transition,
-            )
+        day_data["heat_combined"] = create_combined_heat_flux(
+            day_data,
+            morning_transition,
+            evening_transition,
         )
 
         # KEEP ONLY VALID COMBINED VALUES
-        valid = day_data[
-            day_data["heat_combined"].notna()
-        ].copy()
+        valid = day_data[day_data["heat_combined"].notna()].copy()
 
         if valid.empty:
             continue
 
         # Add transition information
-        valid["morning_transition"] = (
-            morning_transition
-        )
+        valid["morning_transition"] = morning_transition
 
-        valid["evening_transition"] = (
-            evening_transition
-        )
+        valid["evening_transition"] = evening_transition
 
         combined_rows.append(
             valid[
@@ -727,10 +590,7 @@ def save_combined_heat_flux_csv(
 
     # CHECK IF ANY DATA EXISTS
     if not combined_rows:
-        print(
-            "WARNING: No valid combined heat flux data "
-            "available for CSV export."
-        )
+        print("WARNING: No valid combined heat flux data " "available for CSV export.")
         return
 
     # COMBINE ALL DAYS
@@ -739,15 +599,10 @@ def save_combined_heat_flux_csv(
         ignore_index=True,
     )
 
-    output_data = output_data.sort_values(
-        "timestamp"
-    )
+    output_data = output_data.sort_values("timestamp")
 
     # SAVE CSV
-    output = (
-        CSV_FOLDER
-        / CSV_FILENAME
-    )
+    output = CSV_FOLDER / CSV_FILENAME
 
     output_data.to_csv(
         output,
@@ -756,13 +611,9 @@ def save_combined_heat_flux_csv(
         decimal=".",
     )
 
-    print(
-        f"Saved combined heat flux CSV: {output}"
-    )
+    print(f"Saved combined heat flux CSV: {output}")
 
-    print(
-        f"CSV rows: {len(output_data)}"
-    )
+    print(f"CSV rows: {len(output_data)}")
 
 
 def plot_combined_daily_cycle(
@@ -793,45 +644,30 @@ def plot_combined_daily_cycle(
     missing = required_columns - set(res.columns)
 
     if missing:
-        raise ValueError(
-            f"Missing RES columns: {sorted(missing)}"
-        )
+        raise ValueError(f"Missing RES columns: {sorted(missing)}")
 
     # PREPARE DATA
     res = res.copy()
 
-    res["timestamp"] = pd.to_datetime(
-        res["timestamp"]
-    )
+    res["timestamp"] = pd.to_datetime(res["timestamp"])
 
-    res = res.sort_values(
-        "timestamp"
-    )
+    res = res.sort_values("timestamp")
 
-    res["date"] = res[
-        "timestamp"
-    ].dt.date
+    res["date"] = res["timestamp"].dt.date
 
     # INDIVIDUAL DAILY PLOTS
-    for date, day_data in res.groupby(
-        "date"
-    ):
+    for date, day_data in res.groupby("date"):
 
         day_data = day_data.copy()
 
         # FIND TRANSITIONS
-        morning_transition, evening_transition = (
-            get_transition_times(
-                day_data,
-                date,
-            )
+        morning_transition, evening_transition = get_transition_times(
+            day_data,
+            date,
         )
 
         # If a transition could not be found, skip the day.
-        if (
-            morning_transition is None
-            or evening_transition is None
-        ):
+        if morning_transition is None or evening_transition is None:
             print(
                 f"WARNING: Could not determine transitions for "
                 f"{pd.Timestamp(date).strftime('%d.%m.%Y')}"
@@ -840,30 +676,19 @@ def plot_combined_daily_cycle(
             continue
 
         # CREATE COMBINED CURVE
-        day_data["Heat_combined"] = (
-            create_combined_heat_flux(
-                day_data,
-                morning_transition,
-                evening_transition,
-            )
+        day_data["Heat_combined"] = create_combined_heat_flux(
+            day_data,
+            morning_transition,
+            evening_transition,
         )
 
-        date_string = pd.Timestamp(
-            date
-        ).strftime(
-            "%d.%m.%Y"
-        )
+        date_string = pd.Timestamp(date).strftime("%d.%m.%Y")
 
         # SUNRISE / SUNSET
-        sunrise, sunset = get_sunrise_sunset(
-            date
-        )
+        sunrise, sunset = get_sunrise_sunset(date)
 
         # FIGURE
-        fig, ax = plt.subplots(
-            figsize=(14, 6)
-        )
-
+        fig, ax = plt.subplots(figsize=(14, 6))
 
         # BACKGROUND: ORIGINAL DAY CURVE
         ax.plot(
@@ -954,32 +779,19 @@ def plot_combined_daily_cycle(
         # TRANSITION POINTS
         # Find actual values at transition points
         morning_row = day_data.iloc[
-            (
-                day_data["timestamp"]
-                - morning_transition
-            ).abs().argsort()[:1]
+            (day_data["timestamp"] - morning_transition).abs().argsort()[:1]
         ]
 
         evening_row = day_data.iloc[
-            (
-                day_data["timestamp"]
-                - evening_transition
-            ).abs().argsort()[:1]
+            (day_data["timestamp"] - evening_transition).abs().argsort()[:1]
         ]
 
         # MORNING POINT
-        morning_value_day = morning_row[
-            "Heat_day"
-        ].iloc[0]
+        morning_value_day = morning_row["Heat_day"].iloc[0]
 
-        morning_value_night = morning_row[
-            "Heat_night"
-        ].iloc[0]
+        morning_value_night = morning_row["Heat_night"].iloc[0]
 
-        morning_value = (
-            morning_value_day
-            + morning_value_night
-        ) / 2
+        morning_value = (morning_value_day + morning_value_night) / 2
 
         ax.axvline(
             morning_transition,
@@ -997,21 +809,16 @@ def plot_combined_daily_cycle(
             zorder=10,
         )
 
-        morning_x_offset, morning_y_offset = (
-            get_annotation_position(
-                ax,
-                morning_transition,
-                morning_value,
-                day_data,
-                position="top",
-            )
+        morning_x_offset, morning_y_offset = get_annotation_position(
+            ax,
+            morning_transition,
+            morning_value,
+            day_data,
+            position="top",
         )
 
         ax.annotate(
-            (
-                "Night → Day\n"
-                f"{morning_transition.strftime('%H:%M')}"
-            ),
+            ("Night → Day\n" f"{morning_transition.strftime('%H:%M')}"),
             xy=(
                 morning_transition,
                 morning_value,
@@ -1037,18 +844,11 @@ def plot_combined_daily_cycle(
         )
 
         # EVENING POINT
-        evening_value_day = evening_row[
-            "Heat_day"
-        ].iloc[0]
+        evening_value_day = evening_row["Heat_day"].iloc[0]
 
-        evening_value_night = evening_row[
-            "Heat_night"
-        ].iloc[0]
+        evening_value_night = evening_row["Heat_night"].iloc[0]
 
-        evening_value = (
-            evening_value_day
-            + evening_value_night
-        ) / 2
+        evening_value = (evening_value_day + evening_value_night) / 2
 
         ax.axvline(
             evening_transition,
@@ -1066,21 +866,16 @@ def plot_combined_daily_cycle(
             zorder=10,
         )
 
-        evening_x_offset, evening_y_offset = (
-            get_annotation_position(
-                ax,
-                evening_transition,
-                evening_value,
-                day_data,
-                position="bottom",
-            )
+        evening_x_offset, evening_y_offset = get_annotation_position(
+            ax,
+            evening_transition,
+            evening_value,
+            day_data,
+            position="bottom",
         )
 
         ax.annotate(
-            (
-                "Day → Night\n"
-                f"{evening_transition.strftime('%H:%M')}"
-            ),
+            ("Day → Night\n" f"{evening_transition.strftime('%H:%M')}"),
             xy=(
                 evening_transition,
                 evening_value,
@@ -1109,18 +904,13 @@ def plot_combined_daily_cycle(
         # Determine y-position for region labels
         y_min, y_max = ax.get_ylim()
 
-        y_label = y_min + 0.92 * (
-            y_max - y_min
-        )
+        y_label = y_min + 0.92 * (y_max - y_min)
 
         # Night before sunrise
         ax.text(
             (
                 day_data["timestamp"].min()
-                + (
-                    morning_transition
-                    - day_data["timestamp"].min()
-                ) / 2
+                + (morning_transition - day_data["timestamp"].min()) / 2
             ),
             y_label,
             "Night curve visible",
@@ -1133,13 +923,7 @@ def plot_combined_daily_cycle(
 
         # Day
         ax.text(
-            (
-                morning_transition
-                + (
-                    evening_transition
-                    - morning_transition
-                ) / 2
-            ),
+            (morning_transition + (evening_transition - morning_transition) / 2),
             y_label,
             "Day curve visible",
             ha="center",
@@ -1153,10 +937,7 @@ def plot_combined_daily_cycle(
         ax.text(
             (
                 evening_transition
-                + (
-                    day_data["timestamp"].max()
-                    - evening_transition
-                ) / 2
+                + (day_data["timestamp"].max() - evening_transition) / 2
             ),
             y_label,
             "Night curve visible",
@@ -1169,36 +950,25 @@ def plot_combined_daily_cycle(
 
         # FORMATTING
         ax.set_title(
-            (
-                f"{date_string} – SLS20 – "
-                "combined sensible heat flux diurnal cycle "
-            )
+            (f"{date_string} – SLS20 – " "combined sensible heat flux diurnal cycle ")
         )
 
-        ax.set_ylabel(
-            "Sensible heat flux [$W/m^2$]"
-        )
+        ax.set_ylabel("Sensible heat flux [$W/m^2$]")
 
         ax.grid(
             True,
             alpha=0.3,
         )
 
-        format_time_axis(
-            ax
-        )
+        format_time_axis(ax)
 
         ax.legend()
 
         fig.tight_layout()
 
         # SAVE
-        output = (
-            PLOT_FOLDER
-            / (
-                f"{date_string}_"
-                "SLS20_sensible_heat_flux_combined.png"
-            )
+        output = PLOT_FOLDER / (
+            f"{date_string}_" "SLS20_sensible_heat_flux_combined.png"
         )
 
         fig.savefig(
@@ -1209,19 +979,11 @@ def plot_combined_daily_cycle(
 
         plt.close(fig)
 
-        print(
-            f"Saved combined plot: {output}"
-        )
+        print(f"Saved combined plot: {output}")
 
-        print(
-            f"  Morning transition: "
-            f"{morning_transition.strftime('%H:%M')}"
-        )
+        print(f"  Morning transition: " f"{morning_transition.strftime('%H:%M')}")
 
-        print(
-            f"  Evening transition: "
-            f"{evening_transition.strftime('%H:%M')}"
-        )
+        print(f"  Evening transition: " f"{evening_transition.strftime('%H:%M')}")
 
 
 def plot_combined_all_days(
@@ -1255,50 +1017,33 @@ def plot_combined_all_days(
     missing = required_columns - set(res.columns)
 
     if missing:
-        raise ValueError(
-            f"Missing RES columns: {sorted(missing)}"
-        )
+        raise ValueError(f"Missing RES columns: {sorted(missing)}")
 
     # PREPARE DATA
     res = res.copy()
 
-    res["timestamp"] = pd.to_datetime(
-        res["timestamp"]
-    )
+    res["timestamp"] = pd.to_datetime(res["timestamp"])
 
-    res = res.sort_values(
-        "timestamp"
-    )
+    res = res.sort_values("timestamp")
 
-    res["date"] = res[
-        "timestamp"
-    ].dt.date
+    res["date"] = res["timestamp"].dt.date
 
     # FIGURE
-    fig, ax = plt.subplots(
-        figsize=(14, 6)
-    )
+    fig, ax = plt.subplots(figsize=(14, 6))
 
     # PROCESS EACH DAY
-    for date, day_data in res.groupby(
-        "date"
-    ):
+    for date, day_data in res.groupby("date"):
 
         day_data = day_data.copy()
 
         # FIND TRANSITIONS FOR THIS DAY
-        morning_transition, evening_transition = (
-            get_transition_times(
-                day_data,
-                date,
-            )
+        morning_transition, evening_transition = get_transition_times(
+            day_data,
+            date,
         )
 
         # Skip day if transition could not be determined
-        if (
-            morning_transition is None
-            or evening_transition is None
-        ):
+        if morning_transition is None or evening_transition is None:
             print(
                 f"WARNING: Could not determine transitions for "
                 f"{pd.Timestamp(date).strftime('%d.%m.%Y')}"
@@ -1306,12 +1051,10 @@ def plot_combined_all_days(
             continue
 
         # CREATE COMBINED CURVE
-        day_data["Heat_combined"] = (
-            create_combined_heat_flux(
-                day_data,
-                morning_transition,
-                evening_transition,
-            )
+        day_data["Heat_combined"] = create_combined_heat_flux(
+            day_data,
+            morning_transition,
+            evening_transition,
         )
 
         # BACKGROUND CURVES
@@ -1359,78 +1102,52 @@ def plot_combined_all_days(
 
         # TRANSITION POINT VALUES
         morning_row = day_data.iloc[
-            (
-                day_data["timestamp"]
-                - morning_transition
-            ).abs().argsort()[:1]
+            (day_data["timestamp"] - morning_transition).abs().argsort()[:1]
         ]
 
         evening_row = day_data.iloc[
-            (
-                day_data["timestamp"]
-                - evening_transition
-            ).abs().argsort()[:1]
+            (day_data["timestamp"] - evening_transition).abs().argsort()[:1]
         ]
 
-        morning_value_day = morning_row[
-            "Heat_day"
-        ].iloc[0]
+        morning_value_day = morning_row["Heat_day"].iloc[0]
 
-        morning_value_night = morning_row[
-            "Heat_night"
-        ].iloc[0]
+        morning_value_night = morning_row["Heat_night"].iloc[0]
 
-        morning_value = (
-            morning_value_day
-            + morning_value_night
-        ) / 2
+        morning_value = (morning_value_day + morning_value_night) / 2
 
-        evening_value_day = evening_row[
-            "Heat_day"
-        ].iloc[0]
+        evening_value_day = evening_row["Heat_day"].iloc[0]
 
-        evening_value_night = evening_row[
-            "Heat_night"
-        ].iloc[0]
+        evening_value_night = evening_row["Heat_night"].iloc[0]
 
-        evening_value = (
-            evening_value_day
-            + evening_value_night
-        ) / 2
+        evening_value = (evening_value_day + evening_value_night) / 2
 
-        #ax.scatter(
+        # ax.scatter(
         #    morning_transition,
         #    morning_value,
         #    color="black",
         #    s=25,
         #    zorder=10,
-        #)
+        # )
 
-        #ax.scatter(
+        # ax.scatter(
         #    evening_transition,
         #    evening_value,
         #    color="black",
         #    s=25,
         #    zorder=10,
-        #)
+        # )
 
     # LABELS
-    ax.set_title(
-        "SLS20 – combined sensible heat flux diurnal cycles"
-    )
+    ax.set_title("SLS20 – combined sensible heat flux diurnal cycles")
 
-    ax.set_ylabel(
-        "Sensible heat flux [$W/m^2$]"
-    )
+    ax.set_ylabel("Sensible heat flux [$W/m^2$]")
 
     ax.grid(
         True,
         alpha=0.3,
     )
 
-    format_time_axis(
-        ax
-    )
+    format_time_axis(ax)
     # Only show 00:00 and 12:00
     ax.xaxis.set_major_locator(
         mdates.HourLocator(
@@ -1445,9 +1162,7 @@ def plot_combined_all_days(
     )
 
     # DATE LABELS
-    dates = sorted(
-        res["timestamp"].dt.date.unique()
-    )
+    dates = sorted(res["timestamp"].dt.date.unique())
 
     add_day_labels(
         ax,
@@ -1483,15 +1198,10 @@ def plot_combined_all_days(
 
     ax.legend()
 
-    fig.subplots_adjust(
-        bottom=0.25
-    )
+    fig.subplots_adjust(bottom=0.25)
 
     # SAVE
-    output = (
-        PLOT_FOLDER
-        / "SLS20_sensible_heat_flux_combined_all_days.png"
-    )
+    output = PLOT_FOLDER / "SLS20_sensible_heat_flux_combined_all_days.png"
 
     fig.savefig(
         output,
@@ -1501,9 +1211,7 @@ def plot_combined_all_days(
 
     plt.close(fig)
 
-    print(
-        f"Saved combined all-days plot: {output}"
-    )
+    print(f"Saved combined all-days plot: {output}")
 
 
 # EXISTING PLOT
@@ -1524,25 +1232,17 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
     missing = required_columns - set(res.columns)
 
     if missing:
-        raise ValueError(
-            f"Missing RES columns: {sorted(missing)}"
-        )
+        raise ValueError(f"Missing RES columns: {sorted(missing)}")
 
     # PREPARE DATA
     res = res.copy()
 
-    res["timestamp"] = pd.to_datetime(
-        res["timestamp"]
-    )
+    res["timestamp"] = pd.to_datetime(res["timestamp"])
 
-    res = res.sort_values(
-        "timestamp"
-    )
+    res = res.sort_values("timestamp")
 
     # ALL DAYS
-    fig, ax = plt.subplots(
-        figsize=(14, 6)
-    )
+    fig, ax = plt.subplots(figsize=(14, 6))
 
     ax.plot(
         res["timestamp"],
@@ -1560,13 +1260,9 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
         linewidth=1.0,
     )
 
-    ax.set_title(
-        "SLS20 – Sensible Heat Flux"
-    )
+    ax.set_title("SLS20 – Sensible Heat Flux")
 
-    ax.set_ylabel(
-        "Sensible heat flux [$W/m^2$]"
-    )
+    ax.set_ylabel("Sensible heat flux [$W/m^2$]")
 
     ax.grid(
         True,
@@ -1593,25 +1289,18 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
     )
 
     # DATE LABELS: ONE DATE PER DAY, CENTERED
-    dates = sorted(
-        res["timestamp"].dt.date.unique()
-    )
+    dates = sorted(res["timestamp"].dt.date.unique())
 
     add_day_labels(
         ax,
         dates,
     )
 
-    fig.subplots_adjust(
-        bottom=0.20
-    )
+    fig.subplots_adjust(bottom=0.20)
 
     fig.tight_layout()
 
-    output = (
-        PLOT_FOLDER
-        / "SLS20_sensible_heat_flux_all_days.png"
-    )
+    output = PLOT_FOLDER / "SLS20_sensible_heat_flux_all_days.png"
 
     fig.savefig(
         output,
@@ -1621,22 +1310,14 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
 
     plt.close(fig)
 
-    print(
-        f"Saved: {output}"
-    )
+    print(f"Saved: {output}")
 
     # INDIVIDUAL DAYS
-    res["date"] = res[
-        "timestamp"
-    ].dt.date
+    res["date"] = res["timestamp"].dt.date
 
-    for date, day_data in res.groupby(
-        "date"
-    ):
+    for date, day_data in res.groupby("date"):
 
-        fig, ax = plt.subplots(
-            figsize=(14, 6)
-        )
+        fig, ax = plt.subplots(figsize=(14, 6))
 
         ax.plot(
             day_data["timestamp"],
@@ -1654,19 +1335,11 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
             linewidth=1.2,
         )
 
-        date_string = pd.Timestamp(
-            date
-        ).strftime(
-            "%d.%m.%Y"
-        )
+        date_string = pd.Timestamp(date).strftime("%d.%m.%Y")
 
-        ax.set_title(
-            f"{date_string} – SLS20 – Sensible Heat Flux"
-        )
+        ax.set_title(f"{date_string} – SLS20 – Sensible Heat Flux")
 
-        ax.set_ylabel(
-            "Sensible heat flux [$W/m^2$]"
-        )
+        ax.set_ylabel("Sensible heat flux [$W/m^2$]")
 
         ax.grid(
             True,
@@ -1675,18 +1348,13 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
 
         ax.legend()
 
-        format_time_axis(
-            ax
-        )
+        format_time_axis(ax)
 
         fig.autofmt_xdate()
 
         fig.tight_layout()
 
-        output = (
-            PLOT_FOLDER
-            / f"{date_string}_SLS20_sensible_heat_flux.png"
-        )
+        output = PLOT_FOLDER / f"{date_string}_SLS20_sensible_heat_flux.png"
 
         fig.savefig(
             output,
@@ -1696,93 +1364,57 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
 
         plt.close(fig)
 
-        print(
-            f"Saved: {output}"
-        )
+        print(f"Saved: {output}")
 
 
 # MAIN
 def main():
 
-    print(
-        "SLS20 SENSIBLE HEAT FLUX PLOTS"
-    )
+    print("SLS20 SENSIBLE HEAT FLUX PLOTS")
 
-    print(
-        f"Data folder:  {DATA_FOLDER}"
-    )
+    print(f"Data folder:  {DATA_FOLDER}")
 
-    print(
-        f"Plot folder:  {PLOT_FOLDER}"
-    )
+    print(f"Plot folder:  {PLOT_FOLDER}")
 
     print()
 
-    print(
-        "Loading SLS20 data..."
-    )
+    print("Loading SLS20 data...")
 
-    res, dgn = load_sls20_data(
-        DATA_FOLDER
-    )
-    res = prepare_sls20_timestamps(
-        res
-    )
+    res, dgn = load_sls20_data(DATA_FOLDER)
+    res = prepare_sls20_timestamps(res)
 
     print()
 
-    print(
-        f"DGN rows: {len(dgn)}"
-    )
+    print(f"DGN rows: {len(dgn)}")
 
-    print(
-        f"RES rows: {len(res)}"
-    )
+    print(f"RES rows: {len(res)}")
 
     print()
 
-    print(
-        "RES columns:"
-    )
+    print("RES columns:")
 
-    print(
-        list(res.columns)
-    )
+    print(list(res.columns))
 
     # EXISTING PLOTS
-    plot_heat_flux(
-        res
-    )
+    plot_heat_flux(res)
 
     # NEW COMBINED DAY/NIGHT PLOTS
     print()
-    print(
-        "Creating combined day/night plots..."
-    )
+    print("Creating combined day/night plots...")
 
-    plot_combined_daily_cycle(
-        res
-    )
+    plot_combined_daily_cycle(res)
 
     # One plot containing all days
-    plot_combined_all_days(
-        res
-    )
+    plot_combined_all_days(res)
 
     print()
-    print(
-        "Done."
-    )
+    print("Done.")
 
     # SAVE BLACK COMBINED CURVE AS CSV
     print()
-    print(
-        "Saving combined day/night curve to CSV..."
-    )
+    print("Saving combined day/night curve to CSV...")
 
-    save_combined_heat_flux_csv(
-        res
-    )
+    save_combined_heat_flux_csv(res)
 
 
 if __name__ == "__main__":
