@@ -1456,6 +1456,20 @@ def plot_heat_flux(res: pd.DataFrame) -> None:
     # X-AXIS: ONLY TIME
     format_time_axis(ax)
 
+    # X-AXIS FOR MULTI-DAY PLOT:
+    # Only show 00:00 and 12:00
+    ax.xaxis.set_major_locator(
+        mdates.HourLocator(
+            byhour=[0, 12],
+        )
+    )
+
+    ax.xaxis.set_major_formatter(
+        mdates.DateFormatter(
+            "%H:%M",
+        )
+    )
+
     # DATE LABELS: ONE DATE PER DAY, CENTERED
     dates = sorted(
         res["timestamp"].dt.date.unique()
