@@ -1360,7 +1360,7 @@ def plot_combined_all_days(
     ax.legend()
 
     fig.subplots_adjust(
-        bottom=0.20
+        bottom=0.25
     )
 
     fig.tight_layout()
