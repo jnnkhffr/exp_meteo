@@ -61,8 +61,7 @@
       - retrieve more data
 
 - ## 19th Aug:
-    - ### ca. 9:45 - xx:xx 
-      - Rain: no valid SLS data
+    - day with some showers
 
 - ## 21th Aug:
     - ### stopped measuring
