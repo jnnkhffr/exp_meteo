@@ -1,5 +1,10 @@
 from pathlib import Path
 
+from datetime import timezone, timedelta
+
+from astral import Observer
+from astral.sun import sun
+
 import matplotlib
 matplotlib.use("Agg")
 
@@ -23,6 +28,11 @@ CSV_FOLDER = Path(
 CSV_FILENAME = (
     "SLS20_sensible_heat_flux_combined.csv"
 )
+
+LATITUDE = 54.527748
+LONGITUDE = 11.060508
+
+CET = timezone(timedelta(hours=1))
 
 # Length of the continuous interval used to identify
 # a stable transition.
@@ -154,7 +164,50 @@ def add_day_labels(ax, dates):
         )
 
 
-# NEW: FIND TRANSITION POINTS
+def get_sunrise_sunset(
+    date,
+):
+    """
+    Calculate sunrise and sunset for the given date
+    at the specified geographic coordinates.
+
+    The calculation uses a fixed CET timezone
+    (UTC+1), not Europe/Berlin.
+
+    This means that daylight-saving time (CEST) is
+    intentionally NOT applied.
+
+    The returned timestamps are naive timestamps,
+    matching the wall-clock timestamps used by the
+    SLS20 data.
+    """
+
+    observer = Observer(
+        latitude=LATITUDE,
+        longitude=LONGITUDE,
+    )
+
+    solar_times = sun(
+        observer,
+        date=date,
+        tzinfo=CET,
+    )
+
+    sunrise = solar_times[
+        "sunrise"
+    ].replace(
+        tzinfo=None
+    )
+
+    sunset = solar_times[
+        "sunset"
+    ].replace(
+        tzinfo=None
+    )
+
+    return sunrise, sunset
+
+
 def find_transition_point(
     day_data: pd.DataFrame,
     start_hour: int,
@@ -801,6 +854,10 @@ def plot_combined_daily_cycle(
             "%d.%m.%Y"
         )
 
+        # SUNRISE / SUNSET
+        sunrise, sunset = get_sunrise_sunset(
+            date
+        )
 
         # FIGURE
         fig, ax = plt.subplots(
@@ -836,6 +893,62 @@ def plot_combined_daily_cycle(
             color="black",
             linewidth=1.0,
             zorder=5,
+        )
+
+        # SUNRISE / SUNSET LINES
+        # The solar times are calculated in fixed CET (UTC+1)
+        ax.axvline(
+            sunrise,
+            color="darkorange",
+            linestyle=":",
+            linewidth=1.2,
+            alpha=0.9,
+            zorder=4,
+        )
+
+        ax.axvline(
+            sunset,
+            color="darkorange",
+            linestyle=":",
+            linewidth=1.2,
+            alpha=0.9,
+            zorder=4,
+        )
+
+        # SUNRISE LABEL
+        ax.text(
+            sunrise,
+            0.97,
+            f"Sunrise\n{sunrise.strftime('%H:%M')}",
+            transform=ax.get_xaxis_transform(),
+            ha="center",
+            va="top",
+            fontsize=8,
+            color="darkorange",
+            bbox=dict(
+                boxstyle="round,pad=0.2",
+                facecolor="white",
+                edgecolor="none",
+                alpha=0.75,
+            ),
+        )
+
+        # SUNSET LABEL
+        ax.text(
+            sunset,
+            0.97,
+            f"Sunset\n{sunset.strftime('%H:%M')}",
+            transform=ax.get_xaxis_transform(),
+            ha="center",
+            va="top",
+            fontsize=8,
+            color="darkorange",
+            bbox=dict(
+                boxstyle="round,pad=0.2",
+                facecolor="white",
+                edgecolor="none",
+                alpha=0.75,
+            ),
         )
 
         # TRANSITION POINTS
@@ -1373,8 +1486,6 @@ def plot_combined_all_days(
     fig.subplots_adjust(
         bottom=0.25
     )
-
-    fig.tight_layout()
 
     # SAVE
     output = (
