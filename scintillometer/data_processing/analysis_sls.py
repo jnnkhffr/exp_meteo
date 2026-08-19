@@ -1319,6 +1319,18 @@ def plot_combined_all_days(
     format_time_axis(
         ax
     )
+    # Only show 00:00 and 12:00
+    ax.xaxis.set_major_locator(
+        mdates.HourLocator(
+            byhour=[0, 12],
+        )
+    )
+
+    ax.xaxis.set_major_formatter(
+        mdates.DateFormatter(
+            "%H:%M",
+        )
+    )
 
     # DATE LABELS
     dates = sorted(
