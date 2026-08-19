@@ -124,7 +124,7 @@ def format_time_axis(ax):
     )
 
     ax.set_xlabel(
-        "Time"
+        "Time [CET]"
     )
 
 
