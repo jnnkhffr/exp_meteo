@@ -8,7 +8,7 @@
 - ### Path height: 1,55 m
 - ### Coordinates transmitter:
   - latitude: 54,528295° (54°31'41.9"N)
-  - longitude: 11,060884° (11°03'39.2"E)
+  - longitude: 11,060833° (11°03'39.0"E)
 - ### Coordinates receiver:
   - latitude: 54,527748° (54°31'39.9"N)
   - longitude: 11,060508° (11°03'37.8"E)
