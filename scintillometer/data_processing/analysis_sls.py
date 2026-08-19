@@ -130,10 +130,7 @@ def format_time_axis(ax):
 
 def add_day_labels(ax, dates):
     """
-    Add one date label centered underneath each day.
-
-    The normal x-axis only contains the time.
-    The date is displayed separately below the axis.
+    Add one rotated date label centered underneath each day.
     """
 
     for date in dates:
