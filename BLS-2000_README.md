@@ -5,15 +5,25 @@
 - Measurement device: Scintec BLS 2000 large aperture scintillometer (belonging to the Meteorology Department, University of Hamburg)
 
 ### Instrument positions
-- Transmitter latitude:
-- Transmitter longitude:
-- Transmitter altitude:
+Horizontal positioning obtained through Google Earth: https://earth.google.com/earth/d/1hE1V1W-Sy_V40s7nmjefDnxMlYdgFXu2?usp=sharing
+Vertical positioning obtained through local measurements.
 
-- Receiver latitude:
-- Receiver longitude:
-- Receiver altitude:
+- Transmitter latitude: 54.535256° N
+- Transmitter longitude: 11.067039° E
+- Transmitter altitude: 1.6m above surface
 
-- Path length
+- Receiver latitude: 54.527703° N
+- Receiver longitude: 11.060469° E
+- Receiver altitude: 10.1m above surface
+
+- Path length: 942m
+- Path height: 6.7m
+Path height estimated from vertical instrument positions and the approximated surface height profile (Google Earth) along the path.
+
+### Additional processing data
+- Temperature sensor: WXT at 3m
+- Pressure sensor: WXT at 3m
+- Humidity sensor: WXT at 3m
 
 [add a position & paths picture]
 
