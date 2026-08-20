@@ -65,7 +65,7 @@
     - retrieve more data
 
 - ## 21th Aug:
-    - ### stopped measuring
+    - stopped measuring
 
 
         
