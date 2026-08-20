@@ -1062,7 +1062,7 @@ def plot_combined_all_days(
             day_data["timestamp"],
             day_data["Heat_day"],
             color="tab:red",
-            linewidth=0.8,
+            linewidth=0.5,
             alpha=0.20,
         )
 
@@ -1070,7 +1070,7 @@ def plot_combined_all_days(
             day_data["timestamp"],
             day_data["Heat_night"],
             color="tab:blue",
-            linewidth=0.8,
+            linewidth=0.5,
             alpha=0.35,
         )
 
@@ -1079,7 +1079,7 @@ def plot_combined_all_days(
             day_data["timestamp"],
             day_data["Heat_combined"],
             color="black",
-            linewidth=1.0,
+            linewidth=0.5,
             zorder=5,
         )
 
