@@ -64,8 +64,8 @@
     - day with some showers
     - retrieve more data
 
-- ## 21th Aug:
-    - stopped measuring
+- ## 20th Aug:
+    - stopped measuring in the afternoon
 
 
         
